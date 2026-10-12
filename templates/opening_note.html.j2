@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>{{ opening.name }}</title>
+<style>
+    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; }
+    summary { font-weight: bold; cursor: pointer; padding: 6px 0; }
+    pre { background: #f4f4f4; padding: 8px; border-radius: 4px; white-space: pre-wrap; }
+    img { max-width: 100%; margin: 8px 0; }
+    details { margin-left: 16px; }
+</style>
+</head>
+<body>
+
+<h1>{{ opening.name }}</h1>
+<p>{{ opening.description }}</p>
+
+<h2>起始局面</h2>
+<pre>{{ opening.startingPgn }}</pre>
+{% if opening.startingImage %}
+<img src="{{ opening.startingImage }}">
+{% endif %}
+
+{% for variant in opening.variants %}
+<details open>
+<summary>Variant: {{ variant.name }}</summary>
+
+    {% for sub in variant.subCategories %}
+    <details open>
+    <summary>{{ sub.name }}</summary>
+        {% for line in sub.lines %}
+        <details>
+        <summary>{{ line.name }}</summary>
+        <pre>{{ line.pgn }}</pre>
+        {% if line.image %}<img src="{{ line.image }}">{% endif %}
+        </details>
+        {% endfor %}
+    </details>
+    {% endfor %}
+
+    {% for line in variant.lines %}
+    <details>
+    <summary>{{ line.name }}</summary>
+    <pre>{{ line.pgn }}</pre>
+    {% if line.image %}<img src="{{ line.image }}">{% endif %}
+    </details>
+    {% endfor %}
+
+</details>
+{% endfor %}
+
+</body>
+</html>
