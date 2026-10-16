@@ -68,6 +68,7 @@ class EditorPanel(QScrollArea):
         nameEdit.textChanged.connect(lambda text: self.updateField(variant, "name", text))
         layout.addWidget(nameEdit)
 
+        self.addDescriptionField(layout, variant)
         self.registerSection(variant.id, frame)
 
     def addSubCategorySection(self, sub):
@@ -79,6 +80,7 @@ class EditorPanel(QScrollArea):
         nameEdit.textChanged.connect(lambda text: self.updateField(sub, "name", text))
         layout.addWidget(nameEdit)
 
+        self.addDescriptionField(layout, sub)
         self.registerSection(sub.id, frame)
 
     def addLineSection(self, line):
@@ -90,11 +92,20 @@ class EditorPanel(QScrollArea):
         nameEdit.textChanged.connect(lambda text: self.updateField(line, "name", text))
         layout.addWidget(nameEdit)
 
+        self.addDescriptionField(layout, line)
+
         pgnEditor = PgnImageEditor(line.pgn, line.imagePath, collapsible=True)
         pgnEditor.changed.connect(lambda: self.updateLinePgn(line, pgnEditor))
         layout.addWidget(pgnEditor)
 
         self.registerSection(line.id, frame)
+
+    def addDescriptionField(self, layout, obj):    # Variant / SubCategory / Line 共用的選填說明欄位
+        descEdit = QTextEdit(obj.description)
+        descEdit.setPlaceholderText("說明（選填）")
+        descEdit.setMaximumHeight(50)
+        descEdit.textChanged.connect(lambda: self.updateField(obj, "description", descEdit.toPlainText()))
+        layout.addWidget(descEdit)
 
     ### 共用小工具 ###
     def makeFrame(self):

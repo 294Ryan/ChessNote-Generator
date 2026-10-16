@@ -1,0 +1,9 @@
+<details class="line-card">
+    <summary>{{ line.name }}</summary>
+    <div class="pgn-row">
+        <div class="pgn-collapsed">{{ line.pgnPreview }}</div>
+        <div class="pgn-expanded">{{ line.pgn }}</div>
+    </div>
+    {% if line.description %}<div class="line-desc">{{ line.description }}</div>{% endif %}
+    {% if line.image %}<img src="{{ line.image }}">{% endif %}
+</details>

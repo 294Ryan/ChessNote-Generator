@@ -30,12 +30,14 @@ def buildContext(opening):
     for variant in opening.variants:
         variantData = {
             "name": variant.name,
+            "description": variant.description,
             "subCategories": [],
             "lines": [buildLineContext(l) for l in variant.lines],
         }
         for sub in variant.subCategories:
             variantData["subCategories"].append({
                 "name": sub.name,
+                "description": sub.description,
                 "lines": [buildLineContext(l) for l in sub.lines],
             })
         context["variants"].append(variantData)
@@ -43,10 +45,18 @@ def buildContext(opening):
     return context
 
 
+PGN_PREVIEW_LENGTH = 60    # 折疊時 PGN 預覽的字元數上限
+
 def buildLineContext(line):
+    pgn = line.pgn
+    isTruncated = len(pgn) > PGN_PREVIEW_LENGTH
+    pgnPreview = pgn[:PGN_PREVIEW_LENGTH] + "...more" if isTruncated else pgn
+
     return {
         "name": line.name,
-        "pgn": line.pgn,
+        "description": line.description,
+        "pgn": pgn,
+        "pgnPreview": pgnPreview,
         "image": buildImageDataUri(line.pgn, line.imagePath),
     }
 

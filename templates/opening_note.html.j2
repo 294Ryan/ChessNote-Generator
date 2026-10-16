@@ -5,10 +5,35 @@
 <title>{{ opening.name }}</title>
 <style>
     body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; }
-    summary { font-weight: bold; cursor: pointer; padding: 6px 0; }
+    h1 { margin-bottom: 4px; }
+    h2 { margin-top: 36px; border-bottom: 2px solid #ddd; padding-bottom: 6px; }
+    h3 { margin-top: 20px; }
     pre { background: #f4f4f4; padding: 8px; border-radius: 4px; white-space: pre-wrap; }
-    img { max-width: 100%; margin: 8px 0; }
-    details { margin-left: 16px; }
+    img { max-width: 100%; }
+    .section-desc { color: #555; font-style: italic; margin-top: -4px; }
+
+    ### Line 卡片樣式 ###
+    .line-card { border: 1px solid #ccc; border-radius: 6px; margin: 12px 0; overflow: hidden; }
+    .line-card summary {
+        list-style: none; cursor: pointer; padding: 8px 12px;
+        display: flex; justify-content: space-between; align-items: center;
+        font-weight: bold; background: #fafafa;
+    }
+    .line-card summary::-webkit-details-marker { display: none; }
+    .line-card summary::after { content: "▼"; font-weight: normal; color: #888; }
+    .line-card[open] summary::after { content: "▲"; }
+
+    .line-card .pgn-row { padding: 0 12px 8px; font-family: monospace; color: #555; font-size: 0.9em; }
+    .line-card .pgn-collapsed { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .line-card[open] .pgn-collapsed { display: none; }
+    .line-card .pgn-expanded { display: none; white-space: pre-wrap; }
+    .line-card[open] .pgn-expanded { display: block; }
+
+    .line-card .line-desc { display: none; padding: 0 12px 8px; color: #444; font-style: italic; }
+    .line-card[open] .line-desc { display: block; }
+
+    .line-card img { display: none; max-width: 200px; padding: 0 12px 12px; margin: 0 auto; }
+    .line-card[open] img { display: block; }
 </style>
 </head>
 <body>
@@ -23,31 +48,21 @@
 {% endif %}
 
 {% for variant in opening.variants %}
-<details open>
-<summary>Variant: {{ variant.name }}</summary>
+<h2>{{ variant.name }}</h2>
+{% if variant.description %}<p class="section-desc">{{ variant.description }}</p>{% endif %}
 
     {% for sub in variant.subCategories %}
-    <details open>
-    <summary>{{ sub.name }}</summary>
+    <h3>{{ sub.name }}</h3>
+    {% if sub.description %}<p class="section-desc">{{ sub.description }}</p>{% endif %}
         {% for line in sub.lines %}
-        <details>
-        <summary>{{ line.name }}</summary>
-        <pre>{{ line.pgn }}</pre>
-        {% if line.image %}<img src="{{ line.image }}">{% endif %}
-        </details>
+        {% include "_line_card.html.j2" %}
         {% endfor %}
-    </details>
     {% endfor %}
 
     {% for line in variant.lines %}
-    <details>
-    <summary>{{ line.name }}</summary>
-    <pre>{{ line.pgn }}</pre>
-    {% if line.image %}<img src="{{ line.image }}">{% endif %}
-    </details>
+    {% include "_line_card.html.j2" %}
     {% endfor %}
 
-</details>
 {% endfor %}
 
 </body>
