@@ -46,7 +46,7 @@ class EditorPanel(QScrollArea):
     ### 區塊建構 ###
     def addOpeningSection(self, opening):
         frame = self.makeFrame(indentLevel=0, accentColor=COLOR_OPENING)
-        layout = frame.layout()
+        layout = frame.contentLayout
         layout.addWidget(self.makeHeading("📋 開局基本資訊", COLOR_OPENING))
 
         layout.addWidget(QLabel("開局名稱"))
@@ -69,7 +69,7 @@ class EditorPanel(QScrollArea):
 
     def addVariantSection(self, variant):
         frame = self.makeFrame(indentLevel=0, accentColor=COLOR_VARIANT)
-        layout = frame.layout()
+        layout = frame.contentLayout
         layout.addWidget(self.makeHeading("VARIANT", COLOR_VARIANT))
 
         nameEdit = QLineEdit(variant.name)
@@ -81,7 +81,7 @@ class EditorPanel(QScrollArea):
 
     def addSubCategorySection(self, sub):
         frame = self.makeFrame(indentLevel=1, accentColor=COLOR_SUBCATEGORY)
-        layout = frame.layout()
+        layout = frame.contentLayout
         layout.addWidget(self.makeHeading("子分類", COLOR_SUBCATEGORY))
 
         nameEdit = QLineEdit(sub.name)
@@ -93,7 +93,7 @@ class EditorPanel(QScrollArea):
 
     def addLineSection(self, line, indentLevel):
         frame = self.makeFrame(indentLevel=indentLevel, accentColor=COLOR_LINE)
-        layout = frame.layout()
+        layout = frame.contentLayout
         layout.addWidget(self.makeHeading("LINE", COLOR_LINE))
 
         nameEdit = QLineEdit(line.name)
@@ -117,17 +117,25 @@ class EditorPanel(QScrollArea):
 
     ### 共用小工具 ###
     def makeFrame(self, indentLevel=0, accentColor="#ccc"):    # indentLevel 呈現 Variant > 子分類 > Line 的從屬層次
-        frame = QFrame()
-        frame.setFrameShape(QFrame.StyledPanel)
-        marginLeft = indentLevel * INDENT_WIDTH
-        frame.setStyleSheet(
-            f"QFrame {{ border-left: 4px solid {accentColor}; margin-left: {marginLeft}px;"
-            f" background: white; border-radius: 3px; }}"
-        )
-        frameLayout = QVBoxLayout(frame)
-        frameLayout.setContentsMargins(12, 10, 12, 10)    # 明確指定內距，避免依賴 Qt 預設值造成大片留白
-        frameLayout.setSpacing(6)
-        return frame
+        outer = QWidget()
+        outerLayout = QHBoxLayout(outer)
+        outerLayout.setContentsMargins(indentLevel * INDENT_WIDTH, 0, 0, 0)
+        outerLayout.setSpacing(0)
+
+        bar = QFrame()    # 實體色塊取代 CSS border-left，避免樣式引擎在子元件邊界產生瑕疵線
+        bar.setFixedWidth(4)
+        bar.setStyleSheet(f"background: {accentColor};")
+        outerLayout.addWidget(bar)
+
+        content = QFrame()
+        content.setStyleSheet("QFrame { background: white; }")
+        contentLayout = QVBoxLayout(content)
+        contentLayout.setContentsMargins(12, 10, 12, 10)
+        contentLayout.setSpacing(6)
+        outerLayout.addWidget(content, 1)
+
+        outer.contentLayout = contentLayout    # 呼叫端透過這個加入欄位
+        return outer
 
     def makeHeading(self, text, color):    # 類型徽章，靠左對齊不佔滿整行
         row = QWidget()
