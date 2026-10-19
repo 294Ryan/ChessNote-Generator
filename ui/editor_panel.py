@@ -2,6 +2,13 @@ from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLab
 from PyQt5.QtCore import Qt
 from ui.line_widget import PgnImageEditor
 
+INDENT_WIDTH = 28    # 每層縮排的像素寬度，呈現 Variant > 子分類 > Line 的從屬關係
+
+COLOR_OPENING = "#6b7280"
+COLOR_VARIANT = "#2b6cb0"
+COLOR_SUBCATEGORY = "#2f855a"
+COLOR_LINE = "#8a6d3b"
+
 
 class EditorPanel(QScrollArea):
     def __init__(self, onModelChanged):
@@ -30,16 +37,17 @@ class EditorPanel(QScrollArea):
             for sub in variant.subCategories:
                 self.addSubCategorySection(sub)
                 for line in sub.lines:
-                    self.addLineSection(line)
+                    self.addLineSection(line, indentLevel=2)
             for line in variant.lines:
-                self.addLineSection(line)
+                self.addLineSection(line, indentLevel=1)
 
         self.layout.addStretch()
 
     ### 區塊建構 ###
     def addOpeningSection(self, opening):
-        frame = self.makeFrame()
+        frame = self.makeFrame(indentLevel=0, accentColor=COLOR_OPENING)
         layout = frame.layout()
+        layout.addWidget(self.makeHeading("📋 開局基本資訊", COLOR_OPENING))
 
         layout.addWidget(QLabel("開局名稱"))
         nameEdit = QLineEdit(opening.name)
@@ -60,9 +68,9 @@ class EditorPanel(QScrollArea):
         self.registerSection("opening", frame)
 
     def addVariantSection(self, variant):
-        frame = self.makeFrame()
+        frame = self.makeFrame(indentLevel=0, accentColor=COLOR_VARIANT)
         layout = frame.layout()
-        layout.addWidget(self.makeHeading(f"Variant"))
+        layout.addWidget(self.makeHeading("VARIANT", COLOR_VARIANT))
 
         nameEdit = QLineEdit(variant.name)
         nameEdit.textChanged.connect(lambda text: self.updateField(variant, "name", text))
@@ -72,9 +80,9 @@ class EditorPanel(QScrollArea):
         self.registerSection(variant.id, frame)
 
     def addSubCategorySection(self, sub):
-        frame = self.makeFrame()
+        frame = self.makeFrame(indentLevel=1, accentColor=COLOR_SUBCATEGORY)
         layout = frame.layout()
-        layout.addWidget(self.makeHeading("子分類"))
+        layout.addWidget(self.makeHeading("子分類", COLOR_SUBCATEGORY))
 
         nameEdit = QLineEdit(sub.name)
         nameEdit.textChanged.connect(lambda text: self.updateField(sub, "name", text))
@@ -83,10 +91,10 @@ class EditorPanel(QScrollArea):
         self.addDescriptionField(layout, sub)
         self.registerSection(sub.id, frame)
 
-    def addLineSection(self, line):
-        frame = self.makeFrame()
+    def addLineSection(self, line, indentLevel):
+        frame = self.makeFrame(indentLevel=indentLevel, accentColor=COLOR_LINE)
         layout = frame.layout()
-        layout.addWidget(self.makeHeading("Line"))
+        layout.addWidget(self.makeHeading("LINE", COLOR_LINE))
 
         nameEdit = QLineEdit(line.name)
         nameEdit.textChanged.connect(lambda text: self.updateField(line, "name", text))
@@ -108,16 +116,29 @@ class EditorPanel(QScrollArea):
         layout.addWidget(descEdit)
 
     ### 共用小工具 ###
-    def makeFrame(self):
+    def makeFrame(self, indentLevel=0, accentColor="#ccc"):    # indentLevel 呈現 Variant > 子分類 > Line 的從屬層次
         frame = QFrame()
         frame.setFrameShape(QFrame.StyledPanel)
+        marginLeft = indentLevel * INDENT_WIDTH
+        frame.setStyleSheet(
+            f"QFrame {{ border-left: 4px solid {accentColor}; margin-left: {marginLeft}px;"
+            f" background: white; border-radius: 3px; }}"
+        )
         QVBoxLayout(frame)
         return frame
 
-    def makeHeading(self, text):
-        label = QLabel(text)
-        label.setStyleSheet("font-weight: bold;")
-        return label
+    def makeHeading(self, text, color):    # 類型徽章，靠左對齊不佔滿整行
+        row = QWidget()
+        rowLayout = QHBoxLayout(row)
+        rowLayout.setContentsMargins(0, 0, 0, 4)
+        badge = QLabel(text)
+        badge.setStyleSheet(
+            f"background: {color}; color: white; padding: 2px 8px;"
+            f" border-radius: 3px; font-weight: bold; font-size: 11px;"
+        )
+        rowLayout.addWidget(badge)
+        rowLayout.addStretch()
+        return row
 
     def registerSection(self, nodeId, frame):
         self.layout.addWidget(frame)
