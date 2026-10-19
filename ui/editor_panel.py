@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QFrame, QPushButton
+from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QFrame, QPushButton, QSizePolicy
 from PyQt5.QtCore import Qt
 from ui.line_widget import PgnImageEditor
 
@@ -136,6 +136,8 @@ class EditorPanel(QScrollArea):
             f"background: {color}; color: white; padding: 2px 8px;"
             f" border-radius: 3px; font-weight: bold; font-size: 11px;"
         )
+        badge.setFixedHeight(20)    # 明確固定高度，避免剛建立時樣式套用時機不一致導致異常放大
+        badge.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         rowLayout.addWidget(badge)
         rowLayout.addStretch()
         return row
