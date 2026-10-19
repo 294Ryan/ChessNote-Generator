@@ -1,9 +1,16 @@
 <details class="line-card">
-    <summary>{{ line.name }}</summary>
-    <div class="pgn-row">
-        <div class="pgn-collapsed">{{ line.pgnPreview }}</div>
-        <div class="pgn-expanded">{{ line.pgn }}</div>
+    <summary>
+        <span class="line-name">{{ line.name }}</span>
+        <span class="line-toggle"></span>
+    </summary>
+    <div class="line-pgn">
+        <div class="collapsed">{{ line.pgnPreview }}</div>
+        <div class="expanded">{{ line.pgn }}</div>
     </div>
     {% if line.description %}<div class="line-desc">{{ line.description }}</div>{% endif %}
-    {% if line.image %}<img src="{{ line.image }}">{% endif %}
+    {% if line.image %}
+    <div class="line-board">
+        <img src="{{ line.image }}" alt="{{ line.name }} 棋盤圖">
+    </div>
+    {% endif %}
 </details>

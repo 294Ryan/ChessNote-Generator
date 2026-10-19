@@ -2,68 +2,291 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ opening.name }}</title>
 <style>
-    body { font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 16px; }
-    h1 { margin-bottom: 4px; }
-    h2 { margin-top: 36px; border-bottom: 2px solid #ddd; padding-bottom: 6px; }
-    h3 { margin-top: 20px; }
-    pre { background: #f4f4f4; padding: 8px; border-radius: 4px; white-space: pre-wrap; }
-    img { max-width: 100%; }
-    .section-desc { color: #555; font-style: italic; margin-top: -4px; }
+    /* ===== 設計系統：編輯式出版品風格 ===== */
+    :root {
+        --color-bg: #faf8f3;
+        --color-bg-panel: #f3efe4;
+        --color-ink: #2a2520;
+        --color-ink-soft: #655c4e;
+        --color-ink-faint: #9a9080;
+        --color-rule: #ddd3bf;
+        --color-accent: #7a2e2e;
+        --color-accent-soft: #a9664a;
+        --color-card-bg: #ffffff;
 
-    /* Line 卡片樣式 */
-    .line-card { border: 1px solid #ccc; border-radius: 6px; margin: 12px 0; overflow: hidden; }
+        --font-serif: Georgia, 'Noto Serif TC', 'PMingLiU', '新細明體', serif;
+        --font-sans: -apple-system, 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+        --font-mono: Consolas, 'SF Mono', Menlo, 'Courier New', monospace;
+
+        --content-width: 720px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: var(--color-bg);
+        color: var(--color-ink);
+        font-family: var(--font-serif);
+        line-height: 1.75;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+        max-width: var(--content-width);
+        margin: 0 auto;
+        padding: 72px 28px 120px;
+    }
+
+    /* ===== 標題區 ===== */
+    .masthead {
+        border-bottom: 1px solid var(--color-rule);
+        padding-bottom: 28px;
+        margin-bottom: 48px;
+    }
+    .eyebrow {
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--color-accent);
+        margin: 0 0 10px;
+    }
+    .opening-title {
+        font-size: 2.1rem;
+        font-weight: 600;
+        margin: 0 0 14px;
+        letter-spacing: 0.01em;
+    }
+    .opening-desc {
+        font-style: italic;
+        color: var(--color-ink-soft);
+        max-width: 58ch;
+        margin: 0;
+        font-size: 1.02rem;
+    }
+
+    /* ===== 共用：區塊標籤 / 說明文字 ===== */
+    .section-label {
+        font-family: var(--font-sans);
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--color-ink-faint);
+        margin: 0 0 10px;
+    }
+    .section-desc {
+        font-style: italic;
+        color: var(--color-ink-soft);
+        max-width: 62ch;
+        margin: 8px 0 20px;
+        font-size: 0.96rem;
+        line-height: 1.65;
+    }
+
+    /* ===== PGN 區塊 ===== */
+    .pgn-block {
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        background: var(--color-bg-panel);
+        border-left: 3px solid var(--color-rule);
+        padding: 12px 16px;
+        white-space: pre-wrap;
+        line-height: 1.6;
+        color: var(--color-ink);
+    }
+
+    /* ===== 棋盤圖 ===== */
+    .board-figure {
+        text-align: center;
+        margin: 24px 0 8px;
+    }
+    .board-figure img {
+        max-width: min(360px, 100%);
+        border: 1px solid var(--color-rule);
+        padding: 8px;
+        background: #ffffff;
+    }
+
+    /* ===== 起始局面 ===== */
+    .starting-section { margin-bottom: 56px; }
+
+    /* ===== Variant（大段落，地位同起始局面）===== */
+    .variant {
+        margin-top: 48px;
+        padding-top: 32px;
+        border-top: 1px solid var(--color-rule);
+    }
+    .variant-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+    }
+    .variant-title::before {
+        content: "§";
+        color: var(--color-accent);
+        font-weight: 400;
+        font-size: 1.2rem;
+    }
+    .variant-body { margin-top: 18px; margin-left: 2px; }
+
+    /* ===== 子分類（不折疊）===== */
+    .subcategory {
+        margin: 26px 0 18px 4px;
+        padding-left: 20px;
+        border-left: 2px solid var(--color-rule);
+    }
+    .subcategory-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--color-ink);
+    }
+    .subcategory-body { margin-top: 12px; }
+
+    .direct-lines { margin-left: 4px; }
+
+    /* ===== Line 卡片：唯一可折疊的單位 ===== */
+    .line-card {
+        margin: 14px 0;
+        border: 1px solid var(--color-rule);
+        background: var(--color-card-bg);
+        border-radius: 2px;
+    }
     .line-card summary {
-        list-style: none; cursor: pointer; padding: 8px 12px;
-        display: flex; justify-content: space-between; align-items: center;
-        font-weight: bold; background: #fafafa;
+        list-style: none;
+        cursor: pointer;
+        padding: 11px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
     }
     .line-card summary::-webkit-details-marker { display: none; }
-    .line-card summary::after { content: "▼"; font-weight: normal; color: #888; }
-    .line-card[open] summary::after { content: "▲"; }
+    .line-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--color-ink);
+    }
+    .line-toggle {
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        letter-spacing: 0.06em;
+        color: var(--color-ink-faint);
+        white-space: nowrap;
+    }
+    .line-toggle::after { content: "展開 ▾"; }
+    .line-card[open] .line-toggle::after { content: "收合 ▴"; }
 
-    .line-card .pgn-row { padding: 0 12px 8px; font-family: monospace; color: #555; font-size: 0.9em; }
-    .line-card .pgn-collapsed { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .line-card[open] .pgn-collapsed { display: none; }
-    .line-card .pgn-expanded { display: none; white-space: pre-wrap; }
-    .line-card[open] .pgn-expanded { display: block; }
+    .line-pgn {
+        font-family: var(--font-mono);
+        font-size: 0.86rem;
+        padding: 0 16px 12px;
+        color: var(--color-ink-soft);
+    }
+    .line-pgn .collapsed { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .line-card[open] .line-pgn .collapsed { display: none; }
+    .line-pgn .expanded { display: none; white-space: pre-wrap; }
+    .line-card[open] .line-pgn .expanded { display: block; }
 
-    .line-card .line-desc { display: none; padding: 0 12px 8px; color: #444; font-style: italic; }
+    .line-desc {
+        display: none;
+        padding: 0 16px 12px;
+        font-style: italic;
+        color: var(--color-ink-soft);
+        font-size: 0.92rem;
+    }
     .line-card[open] .line-desc { display: block; }
 
-    .line-card img { display: none; max-width: 200px; padding: 0 12px 12px; margin: 0 auto; }
-    .line-card[open] img { display: block; }
+    .line-board { display: none; text-align: center; padding: 4px 16px 16px; }
+    .line-card[open] .line-board { display: block; }
+    .line-board img {
+        max-width: 200px;
+        border: 1px solid var(--color-rule);
+        padding: 6px;
+        background: #ffffff;
+    }
+
+    /* ===== 響應式（手機）===== */
+    @media (max-width: 600px) {
+        .page { padding: 40px 18px 80px; }
+        .opening-title { font-size: 1.7rem; }
+        .variant-title { font-size: 1.3rem; }
+        .subcategory { margin-left: 0; padding-left: 14px; }
+        .pgn-block, .line-pgn { font-size: 0.82rem; }
+    }
+
+    /* ===== 列印樣式 ===== */
+    @media print {
+        body { background: #ffffff; }
+        .page { padding: 0; max-width: 100%; }
+        .line-card { break-inside: avoid; border-color: #ccc; }
+        .variant { break-before: auto; }
+        .pgn-block { background: #f5f5f5; }
+        a { color: inherit; text-decoration: none; }
+        /* 列印時展開所有折疊內容，確保紙本可讀 */
+        .line-pgn .collapsed { display: none; }
+        .line-pgn .expanded { display: block !important; }
+        .line-desc { display: block !important; }
+        .line-board { display: block !important; }
+        .line-toggle { display: none; }
+    }
 </style>
 </head>
 <body>
+<div class="page">
 
-<h1>{{ opening.name }}</h1>
-<p>{{ opening.description }}</p>
+    <header class="masthead">
+        <p class="eyebrow">Chess Opening Study</p>
+        <h1 class="opening-title">{{ opening.name }}</h1>
+        {% if opening.description %}<p class="opening-desc">{{ opening.description }}</p>{% endif %}
+    </header>
 
-<h2>起始局面</h2>
-<pre>{{ opening.startingPgn }}</pre>
-{% if opening.startingImage %}
-<img src="{{ opening.startingImage }}">
-{% endif %}
+    <section class="starting-section">
+        <p class="section-label">起始局面</p>
+        <div class="pgn-block">{{ opening.startingPgn }}</div>
+        {% if opening.startingImage %}
+        <figure class="board-figure">
+            <img src="{{ opening.startingImage }}" alt="起始局面棋盤圖">
+        </figure>
+        {% endif %}
+    </section>
 
-{% for variant in opening.variants %}
-<h2>{{ variant.name }}</h2>
-{% if variant.description %}<p class="section-desc">{{ variant.description }}</p>{% endif %}
+    {% for variant in opening.variants %}
+    <section class="variant">
+        <h2 class="variant-title">{{ variant.name }}</h2>
+        {% if variant.description %}<p class="section-desc">{{ variant.description }}</p>{% endif %}
 
-    {% for sub in variant.subCategories %}
-    <h3>{{ sub.name }}</h3>
-    {% if sub.description %}<p class="section-desc">{{ sub.description }}</p>{% endif %}
-        {% for line in sub.lines %}
-        {% include "_line_card.html.j2" %}
-        {% endfor %}
+        <div class="variant-body">
+            {% for sub in variant.subCategories %}
+            <div class="subcategory">
+                <h3 class="subcategory-title">{{ sub.name }}</h3>
+                {% if sub.description %}<p class="section-desc">{{ sub.description }}</p>{% endif %}
+                <div class="subcategory-body">
+                    {% for line in sub.lines %}
+                    {% include "_line_card.html.j2" %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if variant.lines %}
+            <div class="direct-lines">
+                {% for line in variant.lines %}
+                {% include "_line_card.html.j2" %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </section>
     {% endfor %}
 
-    {% for line in variant.lines %}
-    {% include "_line_card.html.j2" %}
-    {% endfor %}
-
-{% endfor %}
-
+</div>
 </body>
 </html>
