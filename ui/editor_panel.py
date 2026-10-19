@@ -124,19 +124,23 @@ class EditorPanel(QScrollArea):
             f"QFrame {{ border-left: 4px solid {accentColor}; margin-left: {marginLeft}px;"
             f" background: white; border-radius: 3px; }}"
         )
-        QVBoxLayout(frame)
+        frameLayout = QVBoxLayout(frame)
+        frameLayout.setContentsMargins(12, 10, 12, 10)    # 明確指定內距，避免依賴 Qt 預設值造成大片留白
+        frameLayout.setSpacing(6)
         return frame
 
     def makeHeading(self, text, color):    # 類型徽章，靠左對齊不佔滿整行
         row = QWidget()
+        row.setFixedHeight(22)    # 明確鎖死整個 row 的高度，不讓它依賴內部元件的 sizeHint 計算
+        row.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         rowLayout = QHBoxLayout(row)
-        rowLayout.setContentsMargins(0, 0, 0, 4)
+        rowLayout.setContentsMargins(0, 0, 0, 0)
         badge = QLabel(text)
         badge.setStyleSheet(
             f"background: {color}; color: white; padding: 2px 8px;"
             f" border-radius: 3px; font-weight: bold; font-size: 11px;"
         )
-        badge.setFixedHeight(20)    # 明確固定高度，避免剛建立時樣式套用時機不一致導致異常放大
+        badge.setFixedHeight(20)
         badge.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         rowLayout.addWidget(badge)
         rowLayout.addStretch()
