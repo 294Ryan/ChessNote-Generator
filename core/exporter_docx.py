@@ -1,6 +1,7 @@
 import io
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
+from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from core.pgn_renderer import resolveImageBytes
@@ -10,8 +11,10 @@ BODY_FONT_CJK = "PMingLiU"    # 新細明體，中文字元搭配用，襯線風
 PGN_FONT = "Consolas"    # 等寬字體，讓棋步對齊更整齊
 PGN_SIZE = Pt(11)
 COLOR_BLACK = RGBColor(0x1a, 0x1a, 0x1a)
-COLOR_HEADING_LIGHT = RGBColor(0x6e, 0x6e, 0x6e)    # 小標題用淺灰，與大/副標題做出層級區隔
+COLOR_SUBCATEGORY = RGBColor(0x4a, 0x4a, 0x4a)    # 子分類標題灰色，比之前再深一點
 COLOR_PGN = RGBColor(0x8a, 0x35, 0x35)    # 柔和酒紅，與 html 版呼應但不搶眼
+COLOR_LINE_HEADING = RGBColor(0x5c, 0x22, 0x22)    # Line 標題，與 PGN 同色系但更深
+PGN_HIGHLIGHT_FILL = "F6E3E3"    # PGN 底色，跟文字同色系的淡色調
 BOARD_WIDTH = Inches(5.5)    # 棋盤圖放大到接近版面全寬，方便實際讀譜
 
 
@@ -34,17 +37,26 @@ def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
     headingSpecs = [
         ("Heading 1", 32, COLOR_BLACK),
         ("Heading 2", 20, COLOR_BLACK),
-        ("Heading 3", 13, COLOR_HEADING_LIGHT),
-        ("Heading 4", 11.5, COLOR_HEADING_LIGHT),
+        ("Heading 3", 13, COLOR_SUBCATEGORY),
     ]
     for levelName, size, color in headingSpecs:
         headingStyle = doc.styles[levelName]
         headingStyle.font.name = BODY_FONT
         headingStyle.font.size = Pt(size)
         headingStyle.font.bold = True
-        headingStyle.font.italic = False    # Word 內建 Heading 4 預設斜體，明確覆寫避免跑版
+        headingStyle.font.italic = False
         headingStyle.font.color.rgb = color
         setStyleEastAsiaFont(headingStyle, BODY_FONT_CJK)
+
+    # Line 標題改用獨立樣式，不論巢狀深度一律同色，避免跟子分類（Heading 3）混在一起
+    if "ChessLineHeading" not in [s.name for s in doc.styles]:
+        lineStyle = doc.styles.add_style("ChessLineHeading", WD_STYLE_TYPE.PARAGRAPH)
+        lineStyle.base_style = doc.styles["Normal"]
+        lineStyle.font.name = BODY_FONT
+        lineStyle.font.size = Pt(11.5)
+        lineStyle.font.bold = True
+        lineStyle.font.color.rgb = COLOR_LINE_HEADING
+        setStyleEastAsiaFont(lineStyle, BODY_FONT_CJK)
 
     # Heading 1 的段前距離疊加頁面上邊界，導致標題離頁首過遠，歸零修正
     doc.styles["Heading 1"].paragraph_format.space_before = Pt(0)
@@ -67,9 +79,9 @@ def addHorizontalRule(doc):    # 段落下框線模擬分隔線，取代表格
     pPr.append(pBdr)
 
 
-def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色，與正文區隔但不搶重點
+def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 同色系淡底，前後留一格空白讓底色不會貼著文字
     paragraph = doc.add_paragraph()
-    run = paragraph.add_run(pgnText)
+    run = paragraph.add_run(f" {pgnText} ")
     run.font.name = PGN_FONT
     run.font.size = PGN_SIZE    # 明確鎖定大小，不受 Normal 字級調整影響
     run.font.color.rgb = COLOR_PGN
@@ -79,6 +91,12 @@ def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色，
         rFonts = OxmlElement("w:rFonts")
         rPr.append(rFonts)
     rFonts.set(qn("w:eastAsia"), PGN_FONT)
+
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), PGN_HIGHLIGHT_FILL)
+    rPr.append(shd)
     return paragraph
 
 
@@ -88,14 +106,17 @@ def addImageIfExists(doc, pgn, imagePath):
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 
 
-def addDescriptionIfExists(doc, obj):    # 直接顯示說明正文，不加標籤文字（比照 html 版）
+def addDescriptionIfExists(doc, obj, color=None):    # 直接顯示說明正文，不加標籤文字（比照 html 版）
     if obj.description:
-        doc.add_paragraph(obj.description)
+        paragraph = doc.add_paragraph()
+        run = paragraph.add_run(obj.description)
+        if color:
+            run.font.color.rgb = color
 
 
-def addLineSection(doc, line, level):
-    doc.add_heading(line.name, level=level)
-    addDescriptionIfExists(doc, line)
+def addLineSection(doc, line):
+    doc.add_paragraph(line.name, style="ChessLineHeading")
+    addDescriptionIfExists(doc, line, color=COLOR_PGN)
     addPgnParagraph(doc, line.pgn)
     addImageIfExists(doc, line.pgn, line.imagePath)
 
@@ -121,9 +142,9 @@ def exportDocx(opening, outputPath):
             doc.add_heading(sub.name, level=3)
             addDescriptionIfExists(doc, sub)
             for line in sub.lines:
-                addLineSection(doc, line, level=4)
+                addLineSection(doc, line)
 
         for line in variant.lines:
-            addLineSection(doc, line, level=3)
+            addLineSection(doc, line)
 
     doc.save(outputPath)
