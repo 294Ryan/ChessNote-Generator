@@ -6,7 +6,9 @@ from docx.oxml import OxmlElement
 from core.pgn_renderer import resolveImageBytes
 
 BODY_FONT = "Calibri"
+PGN_FONT = "Consolas"    # 等寬字體，讓棋步對齊更整齊
 COLOR_BLACK = RGBColor(0x1a, 0x1a, 0x1a)
+COLOR_PGN = RGBColor(0x8a, 0x35, 0x35)    # 柔和酒紅，與 html 版呼應但不搶眼
 BOARD_WIDTH = Inches(5.5)    # 棋盤圖放大到接近版面全寬，方便實際讀譜
 
 
@@ -38,6 +40,20 @@ def addHorizontalRule(doc):    # 段落下框線模擬分隔線，取代表格
     pPr.append(pBdr)
 
 
+def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色，與正文區隔但不搶重點
+    paragraph = doc.add_paragraph()
+    run = paragraph.add_run(pgnText)
+    run.font.name = PGN_FONT
+    run.font.color.rgb = COLOR_PGN
+    rPr = run._element.get_or_add_rPr()
+    rFonts = rPr.find(qn("w:rFonts"))
+    if rFonts is None:
+        rFonts = OxmlElement("w:rFonts")
+        rPr.append(rFonts)
+    rFonts.set(qn("w:eastAsia"), PGN_FONT)
+    return paragraph
+
+
 def addImageIfExists(doc, pgn, imagePath):
     rawBytes = resolveImageBytes(pgn, imagePath)
     if rawBytes:
@@ -56,7 +72,7 @@ def addDescriptionIfExists(doc, obj):    # 粗體「說明」標籤 + 正文段�
 def addLineSection(doc, line, level):
     doc.add_heading(line.name, level=level)
     addDescriptionIfExists(doc, line)
-    doc.add_paragraph(line.pgn)
+    addPgnParagraph(doc, line.pgn)
     addImageIfExists(doc, line.pgn, line.imagePath)
 
 
@@ -69,7 +85,7 @@ def exportDocx(opening, outputPath):
         doc.add_paragraph(opening.description)
 
     doc.add_heading("基本局面", level=2)
-    doc.add_paragraph(opening.startingPgn)
+    addPgnParagraph(doc, opening.startingPgn)
     addImageIfExists(doc, opening.startingPgn, opening.startingImagePath)
 
     for variant in opening.variants:
