@@ -113,9 +113,9 @@ def exportDocx(opening, outputPath):
     setupStyles(doc)
 
     doc.add_heading(opening.name, level=1)
+    doc.add_paragraph(f"Perspective: {opening.orientation.capitalize()}")
     if opening.description:
         doc.add_paragraph(opening.description)
-    doc.add_paragraph(f"棋局視角: {opening.orientation.capitalize()}")
 
     doc.add_heading("基本局面", level=2)
     addPgnParagraph(doc, opening.startingPgn)

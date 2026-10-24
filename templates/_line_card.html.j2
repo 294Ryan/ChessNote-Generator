@@ -6,7 +6,9 @@
         </span>
         <span class="line-toggle"></span>
     </summary>
-    <div class="line-board{% if not line.image %} empty{% endif %}">
-        {% if line.image %}<img src="{{ line.image }}" alt="Line 棋盤圖">{% endif %}
+    {% if line.image %}
+    <div class="line-board">
+        <img src="{{ line.image }}" alt="Line 棋盤圖">
     </div>
+    {% endif %}
 </details>

@@ -32,7 +32,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.pgnEdit.textChanged.connect(self.onFieldChanged)
         layout.addWidget(self.pgnEdit)
 
-        ### 按鈕列：[▼][產生圖片][上傳圖片] ........ [刪除圖片 / 使用預設] ###
+        ### 按鈕列：[▼][上傳圖片] ........ [刪除圖片 / 使用預設] ###
         buttonRow = QHBoxLayout()
 
         self.toggleArrow = QToolButton(self)    # 預覽圖收合箭頭，只有可收合且有圖時才出現
@@ -46,10 +46,6 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
             sizePolicy.setRetainSizeWhenHidden(True)    # 隱藏時仍佔位，避免圖片出現時按鈕位移
             self.toggleArrow.setSizePolicy(sizePolicy)
             buttonRow.addWidget(self.toggleArrow)
-
-        generateButton = QPushButton("產生圖片")
-        generateButton.clicked.connect(self.onGenerate)
-        buttonRow.addWidget(generateButton)
 
         uploadButton = QPushButton("上傳圖片")
         uploadButton.clicked.connect(self.onUploadImage)
@@ -89,9 +85,6 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.imagePath = None
         self.noImage = False
         self.applyImageState(expand=True)
-
-    def onGenerate(self):    # 一律改用自動生成圖，重新產生並展開
-        self.setAutoImage()
 
     def onUploadImage(self):
         path, _ = QFileDialog.getOpenFileName(self, "選擇圖片", "", "Images (*.png *.jpg *.jpeg)")

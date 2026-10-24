@@ -88,24 +88,27 @@ class DragSortTree(QTreeWidget):    # 只允許同父層、同類型的節點互
         parent = item.parent()
         return parent.data(0, Qt.UserRole + 1) if parent else ""
 
+    def isSameGroup(self, source, target):    # 同類型且同父層（含自己）才算可放置區域
+        if source is None or target is None:
+            return False
+        sourceType = source.data(0, TYPE_ROLE)
+        return bool(sourceType) and sourceType == target.data(0, TYPE_ROLE) and self.parentIdOf(source) == self.parentIdOf(target)
+
     def findDropTarget(self, event):    # 合法回傳 (draggedId, targetId, insertAfter)，否則 None
         source = self.currentItem()
         target = self.itemAt(event.pos())
-        if source is None or target is None or target is source:
-            return None
-        sourceType = source.data(0, TYPE_ROLE)
-        if not sourceType or sourceType != target.data(0, TYPE_ROLE):
-            return None
-        if self.parentIdOf(source) != self.parentIdOf(target):
+        if target is source or not self.isSameGroup(source, target):
             return None
         insertAfter = event.pos().y() > self.visualItemRect(target).center().y()
         return source.data(0, Qt.UserRole + 1), target.data(0, Qt.UserRole + 1), insertAfter
 
     def dragMoveEvent(self, event):
-        if self.findDropTarget(event) is None:
-            event.ignore()
+        if not self.isSameGroup(self.currentItem(), self.itemAt(event.pos())):
+            event.ignore()    # 不同層級或類型：顯示禁止游標
             return
-        super().dragMoveEvent(event)
+        super().dragMoveEvent(event)    # 讓 Qt 更新插入指示線
+        event.setDropAction(Qt.MoveAction)
+        event.accept()    # Qt 自己會因 InternalMove 規則拒絕，這裡強制接受以免游標顯示禁止
 
     def dropEvent(self, event):
         result = self.findDropTarget(event)

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QFrame, QPushButton, QSizePolicy, QApplication, QComboBox
+from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QFrame, QPushButton, QSizePolicy, QApplication, QRadioButton
 from PyQt5.QtCore import Qt, QMimeData, QTimer
 from PyQt5.QtGui import QDrag, QCursor
 from core.models import moveItem
@@ -123,13 +123,17 @@ class EditorPanel(QScrollArea):
         nameEdit.textChanged.connect(lambda text: self.updateField(opening, "name", text))
         layout.addWidget(nameEdit)
 
-        layout.addWidget(QLabel("棋盤視角"))
-        orientationCombo = QComboBox()
-        orientationCombo.addItem("White", "white")
-        orientationCombo.addItem("Black", "black")
-        orientationCombo.setCurrentIndex(0 if opening.orientation == "white" else 1)
-        orientationCombo.currentIndexChanged.connect(lambda: self.onOrientationChanged(opening, orientationCombo.currentData()))
-        layout.addWidget(orientationCombo, 0, Qt.AlignLeft)
+        orientationRow = QHBoxLayout()    # 棋盤視角:  • White  ◦ Black
+        orientationRow.addWidget(QLabel("棋盤視角:"))
+        whiteRadio = QRadioButton("White")
+        blackRadio = QRadioButton("Black")
+        whiteRadio.setChecked(opening.orientation == "white")
+        blackRadio.setChecked(opening.orientation == "black")
+        whiteRadio.toggled.connect(lambda checked: self.onOrientationChanged(opening, "white" if checked else "black"))
+        orientationRow.addWidget(whiteRadio)
+        orientationRow.addWidget(blackRadio)
+        orientationRow.addStretch()
+        layout.addLayout(orientationRow)
 
         layout.addWidget(QLabel("開局概述"))
         descEdit = QTextEdit(opening.description)
