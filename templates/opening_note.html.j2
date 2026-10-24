@@ -56,7 +56,7 @@
         margin: 0 0 10px;
     }
     .opening-title {
-        font-size: 2.1rem;
+        font-size: 2.4rem;
         font-weight: 600;
         margin: 0 0 14px;
         letter-spacing: 0.01em;
@@ -190,6 +190,13 @@
         padding: 0 16px 12px;
         color: var(--color-ink-soft);
     }
+    .pgn-mark {    /* PGN 標記底色：暖米偏粉，搭配深酒紅字，對比約 9:1 */
+        background: #f0e1d6;
+        color: #5c2222;
+        border-radius: 2px;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+    }
     .line-pgn .collapsed { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .line-card[open] .line-pgn .collapsed { display: none; }
     .line-pgn .expanded { display: none; white-space: pre-wrap; }
@@ -216,7 +223,7 @@
     /* ===== 響應式（手機）===== */
     @media (max-width: 600px) {
         .page { padding: 40px 18px 80px; }
-        .opening-title { font-size: 1.7rem; }
+        .opening-title { font-size: 1.9rem; }
         .variant-title { font-size: 1.3rem; }
         .subcategory { margin-left: 0; padding-left: 14px; }
         .pgn-block, .line-pgn { font-size: 0.82rem; }

@@ -1,7 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QToolButton, QFileDialog
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from core.pgn_renderer import resolveImageBytes
+
+PREVIEW_DEBOUNCE_MS = 300    # 停止輸入多久後才重繪棋盤圖
 
 
 class CollapsibleImage(QWidget):    # 棋盤圖預覽區，有內容才自動展開（無內容整塊隱藏）
@@ -47,6 +49,11 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽（自動產生或�
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        self.previewTimer = QTimer(self)    # debounce：停止輸入後才重繪棋盤圖
+        self.previewTimer.setSingleShot(True)
+        self.previewTimer.setInterval(PREVIEW_DEBOUNCE_MS)
+        self.previewTimer.timeout.connect(self.refreshPreview)
+
         self.pgnEdit = QPlainTextEdit(pgn)
         self.pgnEdit.setPlaceholderText("輸入 PGN，例如 1. e4 e5 2. Nf3 Nc6")
         self.pgnEdit.setMaximumHeight(70)
@@ -76,7 +83,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽（自動產生或�
 
     def onFieldChanged(self):
         self.changed.emit()
-        self.refreshPreview()
+        self.previewTimer.start()    # 每次輸入重新計時
 
     def onUploadImage(self):
         path, _ = QFileDialog.getOpenFileName(self, "選擇圖片", "", "Images (*.png *.jpg *.jpeg)")

@@ -3,11 +3,11 @@
         <span class="line-name">{{ line.name }}</span>
         <span class="line-toggle"></span>
     </summary>
-    <div class="line-pgn">
-        <div class="collapsed">{{ line.pgnPreview }}</div>
-        <div class="expanded">{{ line.pgn }}</div>
-    </div>
     {% if line.description %}<div class="line-desc">{{ line.description }}</div>{% endif %}
+    <div class="line-pgn">
+        <div class="collapsed"><span class="pgn-mark">&nbsp;{{ line.pgnPreview }}&nbsp;</span></div>
+        <div class="expanded"><span class="pgn-mark">&nbsp;{{ line.pgn }}&nbsp;</span></div>
+    </div>
     {% if line.image %}
     <div class="line-board">
         <img src="{{ line.image }}" alt="{{ line.name }} 棋盤圖">

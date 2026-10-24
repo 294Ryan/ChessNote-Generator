@@ -9,7 +9,8 @@ from core.pgn_renderer import resolveImageBytes
 BODY_FONT = "Cambria"    # 襯線字體，呼應 html 版的出版品質感（僅影響英數字元）
 BODY_FONT_CJK = "PMingLiU"    # 新細明體，中文字元搭配用，襯線風格與 Cambria 呼應
 PGN_FONT = "Consolas"    # 等寬字體，讓棋步對齊更整齊
-PGN_SIZE = Pt(11)
+LINE_SIZE = Pt(11.5)    # Line 名稱 / Line 說明 / PGN 共用字級，層級靠粗體區分
+PGN_SIZE = LINE_SIZE
 COLOR_BLACK = RGBColor(0x1a, 0x1a, 0x1a)
 COLOR_SUBCATEGORY = RGBColor(0x4a, 0x4a, 0x4a)    # 子分類標題灰色，比之前再深一點
 COLOR_PGN = RGBColor(0x8a, 0x35, 0x35)    # 柔和酒紅，與 html 版呼應但不搶眼
@@ -35,9 +36,9 @@ def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
     setStyleEastAsiaFont(normalStyle, BODY_FONT_CJK)
 
     headingSpecs = [
-        ("Heading 1", 32, COLOR_BLACK),
+        ("Heading 1", 28, COLOR_BLACK),
         ("Heading 2", 20, COLOR_BLACK),
-        ("Heading 3", 13, COLOR_SUBCATEGORY),
+        ("Heading 3", 15, COLOR_SUBCATEGORY),
     ]
     for levelName, size, color in headingSpecs:
         headingStyle = doc.styles[levelName]
@@ -53,7 +54,7 @@ def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
         lineStyle = doc.styles.add_style("ChessLineHeading", WD_STYLE_TYPE.PARAGRAPH)
         lineStyle.base_style = doc.styles["Normal"]
         lineStyle.font.name = BODY_FONT
-        lineStyle.font.size = Pt(11.5)
+        lineStyle.font.size = LINE_SIZE
         lineStyle.font.bold = True
         lineStyle.font.color.rgb = COLOR_LINE_HEADING
         setStyleEastAsiaFont(lineStyle, BODY_FONT_CJK)
@@ -81,7 +82,7 @@ def addHorizontalRule(doc):    # 段落下框線模擬分隔線，取代表格
 
 def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 同色系淡底，前後留一格空白讓底色不會貼著文字
     paragraph = doc.add_paragraph()
-    run = paragraph.add_run(f" {pgnText} ")
+    run = paragraph.add_run(f"\u00A0{pgnText}\u00A0")    # 用不換行空白，普通空白在段尾會被 Word 吃掉
     run.font.name = PGN_FONT
     run.font.size = PGN_SIZE    # 明確鎖定大小，不受 Normal 字級調整影響
     run.font.color.rgb = COLOR_PGN
@@ -106,17 +107,20 @@ def addImageIfExists(doc, pgn, imagePath):
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 
 
-def addDescriptionIfExists(doc, obj, color=None):    # 直接顯示說明正文，不加標籤文字（比照 html 版）
+def addDescriptionIfExists(doc, obj, color=None, size=None):    # 直接顯示說明正文，不加標籤文字（比照 html 版）
     if obj.description:
         paragraph = doc.add_paragraph()
         run = paragraph.add_run(obj.description)
         if color:
             run.font.color.rgb = color
+        if size:
+            run.font.size = size
 
 
 def addLineSection(doc, line):
-    doc.add_paragraph(line.name, style="ChessLineHeading")
-    addDescriptionIfExists(doc, line, color=COLOR_PGN)
+    namePara = doc.add_paragraph(style="ChessLineHeading")
+    namePara.add_run(line.name).bold = True
+    addDescriptionIfExists(doc, line, color=COLOR_PGN, size=LINE_SIZE)
     addPgnParagraph(doc, line.pgn)
     addImageIfExists(doc, line.pgn, line.imagePath)
 
