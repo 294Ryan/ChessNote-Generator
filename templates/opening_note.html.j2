@@ -169,11 +169,6 @@
         gap: 12px;
     }
     .line-card summary::-webkit-details-marker { display: none; }
-    .line-name {
-        font-weight: 600;
-        font-size: 1rem;
-        color: var(--color-ink);
-    }
     .line-toggle {
         font-family: var(--font-sans);
         font-size: 0.68rem;
@@ -184,11 +179,12 @@
     .line-toggle::after { content: "展開 ▾"; }
     .line-card[open] .line-toggle::after { content: "收合 ▴"; }
 
-    .line-pgn {
+    .line-pgn {    /* 摺疊列本身就是 PGN：收合時單行截斷，展開後完整換行 */
+        flex: 1;
+        min-width: 0;
         font-family: var(--font-mono);
-        font-size: 0.86rem;
-        padding: 0 16px 12px;
-        color: var(--color-ink-soft);
+        font-size: 0.95rem;
+        line-height: 1.7;
     }
     .pgn-mark {    /* PGN 標記底色：暖米偏粉，搭配深酒紅字，對比約 9:1 */
         background: #f0e1d6;
@@ -197,19 +193,10 @@
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
     }
-    .line-pgn .collapsed { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .line-pgn .collapsed { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .line-card[open] .line-pgn .collapsed { display: none; }
-    .line-pgn .expanded { display: none; white-space: pre-wrap; }
+    .line-pgn .expanded { display: none; white-space: pre-wrap; overflow-wrap: anywhere; }
     .line-card[open] .line-pgn .expanded { display: block; }
-
-    .line-desc {
-        display: none;
-        padding: 0 16px 12px;
-        font-style: italic;
-        color: var(--color-ink-soft);
-        font-size: 0.92rem;
-    }
-    .line-card[open] .line-desc { display: block; }
 
     .line-board { display: none; text-align: center; padding: 4px 16px 16px; }
     .line-card[open] .line-board { display: block; }
@@ -240,7 +227,6 @@
         /* 列印時展開所有折疊內容，確保紙本可讀 */
         .line-pgn .collapsed { display: none; }
         .line-pgn .expanded { display: block !important; }
-        .line-desc { display: block !important; }
         .line-board { display: block !important; }
         .line-toggle { display: none; }
     }
@@ -271,6 +257,14 @@
         {% if variant.description %}<p class="section-desc">{{ variant.description }}</p>{% endif %}
 
         <div class="variant-body">
+            {% if variant.lines %}
+            <div class="direct-lines">
+                {% for line in variant.lines %}
+                {% include "_line_card.html.j2" %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
             {% for sub in variant.subCategories %}
             <div class="subcategory">
                 <h3 class="subcategory-title">{{ sub.name }}</h3>
@@ -282,14 +276,6 @@
                 </div>
             </div>
             {% endfor %}
-
-            {% if variant.lines %}
-            <div class="direct-lines">
-                {% for line in variant.lines %}
-                {% include "_line_card.html.j2" %}
-                {% endfor %}
-            </div>
-            {% endif %}
         </div>
     </section>
     {% endfor %}

@@ -4,26 +4,31 @@ def newId():    # 產生唯一識別碼，供樹狀節點對應用
     return str(uuid.uuid4())
 
 
+def moveItem(items, itemId, insertIndex):    # 把 itemId 移到 insertIndex 之前（索引以移動前為準），順序有變回傳 True
+    oldIndex = next(i for i, n in enumerate(items) if n.id == itemId)
+    newIndex = insertIndex - 1 if insertIndex > oldIndex else insertIndex
+    if newIndex == oldIndex:
+        return False
+    items.insert(newIndex, items.pop(oldIndex))
+    return True
+
+
 class Line:
-    def __init__(self, name="", pgn="", imagePath=None, description=""):
+    def __init__(self, pgn="", imagePath=None):
         self.id = newId()
-        self.name = name
         self.pgn = pgn
         self.imagePath = imagePath    # None 代表用自動生成圖，否則為手動上傳覆蓋的路徑
-        self.description = description    # 選填說明
 
     def toDict(self):
         return {
             "id": self.id,
-            "name": self.name,
             "pgn": self.pgn,
             "imagePath": self.imagePath,
-            "description": self.description,
         }
 
     @staticmethod
     def fromDict(data):
-        line = Line(data["name"], data["pgn"], data.get("imagePath"), data.get("description", ""))
+        line = Line(data["pgn"], data.get("imagePath"))    # 舊存檔的 name / description 直接忽略
         line.id = data["id"]
         return line
 

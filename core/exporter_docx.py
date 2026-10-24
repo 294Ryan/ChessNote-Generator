@@ -1,7 +1,6 @@
 import io
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
-from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from core.pgn_renderer import resolveImageBytes
@@ -9,12 +8,11 @@ from core.pgn_renderer import resolveImageBytes
 BODY_FONT = "Cambria"    # 襯線字體，呼應 html 版的出版品質感（僅影響英數字元）
 BODY_FONT_CJK = "PMingLiU"    # 新細明體，中文字元搭配用，襯線風格與 Cambria 呼應
 PGN_FONT = "Consolas"    # 等寬字體，讓棋步對齊更整齊
-LINE_SIZE = Pt(12)    # Line 名稱 / Line 說明 / PGN 共用字級，層級靠粗體區分
+LINE_SIZE = Pt(12)    # Line PGN 字級
 PGN_SIZE = LINE_SIZE
 COLOR_BLACK = RGBColor(0x1a, 0x1a, 0x1a)
 COLOR_SUBCATEGORY = RGBColor(0x4a, 0x4a, 0x4a)    # 子分類標題灰色，比之前再深一點
 COLOR_PGN = RGBColor(0x8a, 0x35, 0x35)    # 柔和酒紅，與 html 版呼應但不搶眼
-COLOR_LINE_HEADING = RGBColor(0x5c, 0x22, 0x22)    # Line 標題，與 PGN 同色系但更深
 PGN_HIGHLIGHT_FILL = "F6E3E3"    # PGN 底色，跟文字同色系的淡色調
 BOARD_WIDTH = Inches(5.5)    # 棋盤圖放大到接近版面全寬，方便實際讀譜
 
@@ -48,16 +46,6 @@ def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
         headingStyle.font.italic = False
         headingStyle.font.color.rgb = color
         setStyleEastAsiaFont(headingStyle, BODY_FONT_CJK)
-
-    # Line 標題改用獨立樣式，不論巢狀深度一律同色，避免跟子分類（Heading 3）混在一起
-    if "ChessLineHeading" not in [s.name for s in doc.styles]:
-        lineStyle = doc.styles.add_style("ChessLineHeading", WD_STYLE_TYPE.PARAGRAPH)
-        lineStyle.base_style = doc.styles["Normal"]
-        lineStyle.font.name = BODY_FONT
-        lineStyle.font.size = LINE_SIZE
-        lineStyle.font.bold = True
-        lineStyle.font.color.rgb = COLOR_LINE_HEADING
-        setStyleEastAsiaFont(lineStyle, BODY_FONT_CJK)
 
     # Heading 1 的段前距離疊加頁面上邊界，導致標題離頁首過遠，歸零修正
     doc.styles["Heading 1"].paragraph_format.space_before = Pt(0)
@@ -107,20 +95,15 @@ def addImageIfExists(doc, pgn, imagePath):
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 
 
-def addDescriptionIfExists(doc, obj, color=None, size=None):    # 直接顯示說明正文，不加標籤文字（比照 html 版）
+def addDescriptionIfExists(doc, obj, color=None):    # 直接顯示說明正文，不加標籤文字（比照 html 版）
     if obj.description:
         paragraph = doc.add_paragraph()
         run = paragraph.add_run(obj.description)
         if color:
             run.font.color.rgb = color
-        if size:
-            run.font.size = size
 
 
 def addLineSection(doc, line):
-    namePara = doc.add_paragraph(style="ChessLineHeading")
-    namePara.add_run(line.name).bold = True
-    addDescriptionIfExists(doc, line, color=COLOR_PGN, size=LINE_SIZE)
     addPgnParagraph(doc, line.pgn)
     addImageIfExists(doc, line.pgn, line.imagePath)
 
@@ -142,13 +125,13 @@ def exportDocx(opening, outputPath):
         doc.add_heading(variant.name, level=2)
         addDescriptionIfExists(doc, variant)
 
+        for line in variant.lines:    # Line 排在子分類之前
+            addLineSection(doc, line)
+
         for sub in variant.subCategories:
             doc.add_heading(sub.name, level=3)
             addDescriptionIfExists(doc, sub)
             for line in sub.lines:
                 addLineSection(doc, line)
-
-        for line in variant.lines:
-            addLineSection(doc, line)
 
     doc.save(outputPath)

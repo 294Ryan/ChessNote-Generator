@@ -53,8 +53,6 @@ def buildLineContext(line):
     pgnPreview = pgn[:PGN_PREVIEW_LENGTH] + "...more" if isTruncated else pgn
 
     return {
-        "name": line.name,
-        "description": line.description,
         "pgn": pgn,
         "pgnPreview": pgnPreview,
         "image": buildImageDataUri(line.pgn, line.imagePath),

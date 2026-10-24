@@ -1,12 +1,20 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QLabel, QToolButton, QFrame
 from PyQt5.QtCore import Qt, pyqtSignal
 
+TREE_LINE_LABEL_LENGTH = 24    # Line 項目顯示的 PGN 字數上限
 INDENT_WIDTH = 18    # 每層縮排的像素寬度，需與 editor_panel 的視覺比例一致（樹狀面板較窄，用較小值）
 
 COLOR_OPENING = "#6b7280"
 COLOR_VARIANT = "#2b6cb0"
 COLOR_SUBCATEGORY = "#2f855a"
 COLOR_LINE = "#8a6d3b"
+
+
+def makeLineLabel(pgn):    # Line 沒有名稱，改用 PGN 前段當標籤
+    text = " ".join(pgn.split())
+    if not text:
+        return "（空白 Line）"
+    return text[:TREE_LINE_LABEL_LENGTH] + ("…" if len(text) > TREE_LINE_LABEL_LENGTH else "")
 
 
 class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數明確指定，不依賴 Qt 原生箭頭機制
@@ -114,10 +122,10 @@ class TreePanel(QWidget):
         row.toggleClicked.connect(lambda: self.toggleItem(item, row))
         self.tree.setItemWidget(item, 0, row)
 
+        for line in variant.lines:    # Line 排在子分類之前
+            self.addLineItem(item, line, indentLevel=1)
         for sub in variant.subCategories:
             self.addSubCategoryItem(item, sub)
-        for line in variant.lines:
-            self.addLineItem(item, line, indentLevel=1)
 
         self.addActionItem(item, "+ 新增子分類", lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1)
         self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1)
@@ -138,7 +146,7 @@ class TreePanel(QWidget):
     def addLineItem(self, parent, line, indentLevel):
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole + 1, line.id)
-        row = TreeRowWidget(line.name or "未命名 Line", indentLevel=indentLevel, accentColor=COLOR_LINE)
+        row = TreeRowWidget(makeLineLabel(line.pgn), indentLevel=indentLevel, accentColor=COLOR_LINE)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("line", line.id))
         self.tree.setItemWidget(item, 0, row)
 

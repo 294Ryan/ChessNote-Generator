@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         self.currentProjectPath = None
 
         self.treePanel = TreePanel()
-        self.editorPanel = EditorPanel(self.onModelChanged)
+        self.editorPanel = EditorPanel(self.onModelChanged, self.refreshUI)
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.treePanel)
