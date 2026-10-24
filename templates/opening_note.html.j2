@@ -61,6 +61,11 @@
         margin: 0 0 14px;
         letter-spacing: 0.01em;
     }
+    .opening-orient {
+        color: var(--color-ink-soft);
+        margin: 10px 0 0;
+        font-size: 1.02rem;
+    }
     .opening-desc {
         font-style: italic;
         color: var(--color-ink-soft);
@@ -70,14 +75,6 @@
     }
 
     /* ===== 共用：區塊標籤 / 說明文字 ===== */
-    .section-label {
-        font-family: var(--font-sans);
-        font-size: 0.7rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--color-ink-faint);
-        margin: 0 0 10px;
-    }
     .section-desc {
         font-style: italic;
         color: var(--color-ink-soft);
@@ -113,6 +110,7 @@
 
     /* ===== 起始局面 ===== */
     .starting-section { margin-bottom: 56px; }
+    .starting-section .variant-title { margin-bottom: 14px; }
 
     /* ===== Variant（大段落，地位同起始局面）===== */
     .variant {
@@ -186,8 +184,8 @@
         font-size: 0.95rem;
         line-height: 1.7;
     }
-    .pgn-mark {    /* PGN 標記底色：暖米偏粉，搭配深酒紅字，對比約 9:1 */
-        background: #f0e1d6;
+    .pgn-mark {    /* PGN 標記底色：暖米偏粉，搭配深酒紅字，對比約 10:1 */
+        background: #f7eee6;
         color: #5c2222;
         border-radius: 2px;
         -webkit-box-decoration-break: clone;
@@ -200,6 +198,7 @@
 
     .line-board { display: none; text-align: center; padding: 4px 16px 16px; }
     .line-card[open] .line-board { display: block; }
+    .line-board.empty { min-height: 220px; }    /* 沒有圖片時，原本放圖的位置整格留白 */
     .line-board img {
         max-width: 200px;
         border: 1px solid var(--color-rule);
@@ -228,6 +227,7 @@
         .line-pgn .collapsed { display: none; }
         .line-pgn .expanded { display: block !important; }
         .line-board { display: block !important; }
+        .line-board.empty { display: none !important; }
         .line-toggle { display: none; }
     }
 </style>
@@ -239,10 +239,11 @@
         <p class="eyebrow">Chess Opening Study</p>
         <h1 class="opening-title">{{ opening.name }}</h1>
         {% if opening.description %}<p class="opening-desc">{{ opening.description }}</p>{% endif %}
+        <p class="opening-orient">棋局視角: {{ opening.orientation }}</p>
     </header>
 
     <section class="starting-section">
-        <p class="section-label">起始局面</p>
+        <h2 class="variant-title">起始局面</h2>
         <div class="pgn-block">{{ opening.startingPgn }}</div>
         {% if opening.startingImage %}
         <figure class="board-figure">

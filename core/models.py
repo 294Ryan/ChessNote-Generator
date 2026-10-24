@@ -14,21 +14,23 @@ def moveItem(items, itemId, insertIndex):    # 把 itemId 移到 insertIndex 之
 
 
 class Line:
-    def __init__(self, pgn="", imagePath=None):
+    def __init__(self, pgn="", imagePath=None, noImage=False):
         self.id = newId()
         self.pgn = pgn
         self.imagePath = imagePath    # None 代表用自動生成圖，否則為手動上傳覆蓋的路徑
+        self.noImage = noImage    # True 代表刻意不放圖片
 
     def toDict(self):
         return {
             "id": self.id,
             "pgn": self.pgn,
             "imagePath": self.imagePath,
+            "noImage": self.noImage,
         }
 
     @staticmethod
     def fromDict(data):
-        line = Line(data["pgn"], data.get("imagePath"))    # 舊存檔的 name / description 直接忽略
+        line = Line(data["pgn"], data.get("imagePath"), data.get("noImage", False))    # 舊存檔的 name / description 直接忽略
         line.id = data["id"]
         return line
 
@@ -103,6 +105,8 @@ class Opening:
         self.description = description
         self.startingPgn = startingPgn
         self.startingImagePath = None    # None 代表用自動生成圖
+        self.startingNoImage = False    # True 代表起始局面刻意不放圖片
+        self.orientation = "white"    # 自動生成圖的棋盤視角 white / black
         self.variants = []
 
     def addVariant(self, variant=None):
@@ -117,6 +121,8 @@ class Opening:
             "description": self.description,
             "startingPgn": self.startingPgn,
             "startingImagePath": self.startingImagePath,
+            "startingNoImage": self.startingNoImage,
+            "orientation": self.orientation,
             "variants": [v.toDict() for v in self.variants],
         }
 
@@ -124,5 +130,7 @@ class Opening:
     def fromDict(data):
         opening = Opening(data["name"], data["description"], data["startingPgn"])
         opening.startingImagePath = data.get("startingImagePath")
+        opening.startingNoImage = data.get("startingNoImage", False)
+        opening.orientation = data.get("orientation", "white")
         opening.variants = [Variant.fromDict(v) for v in data["variants"]]
         return opening

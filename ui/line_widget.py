@@ -4,47 +4,19 @@ from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from core.pgn_renderer import resolveImageBytes
 
 PREVIEW_DEBOUNCE_MS = 300    # 停止輸入多久後才重繪棋盤圖
+PREVIEW_WIDTH = 280    # 預覽圖寬度（像素）
 
 
-class CollapsibleImage(QWidget):    # 棋盤圖預覽區，有內容才自動展開（無內容整塊隱藏）
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.toggleButton = QToolButton()
-        self.toggleButton.setCheckable(True)
-        self.toggleButton.toggled.connect(self.onToggled)
-        self.toggleButton.setVisible(False)
-        layout.addWidget(self.toggleButton)
-
-        self.imageLabel = QLabel()
-        self.imageLabel.setAlignment(Qt.AlignCenter)
-        self.imageLabel.setVisible(False)
-        layout.addWidget(self.imageLabel)
-
-    def onToggled(self, checked):
-        self.imageLabel.setVisible(checked)
-        self.toggleButton.setText("▼ 棋盤預覽" if checked else "▶ 棋盤預覽")
-
-    def setPixmap(self, pixmap):
-        hasImage = pixmap is not None and not pixmap.isNull()
-        self.toggleButton.setVisible(hasImage)
-        if hasImage:
-            self.imageLabel.setPixmap(pixmap.scaledToWidth(280, Qt.SmoothTransformation))
-            self.toggleButton.setChecked(True)    # 有內容自動展開
-        else:
-            self.imageLabel.clear()
-            self.imageLabel.setVisible(False)
-
-
-class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽（自動產生或手動上傳覆蓋）
+class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀態：自動產生 / 手動上傳 / 刪除（空白）
     changed = pyqtSignal()
 
-    def __init__(self, pgn="", imagePath=None, collapsible=True):
+    def __init__(self, pgn="", imagePath=None, noImage=False, orientation="white", collapsible=True):
         super().__init__()
-        self.imagePath = imagePath
+        self.imagePath = imagePath    # 手動上傳的圖片路徑，None 代表用自動生成圖
+        self.noImage = noImage    # True 代表刻意不放圖片
+        self.orientation = orientation    # 自動生成圖的棋盤視角 white / black
         self.collapsible = collapsible
+        self.hadImage = False    # 上一次預覽是否有圖，用來判斷「圖片剛出現」時要自動展開
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -60,43 +32,87 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽（自動產生或�
         self.pgnEdit.textChanged.connect(self.onFieldChanged)
         layout.addWidget(self.pgnEdit)
 
+        ### 按鈕列：[▼][產生圖片][上傳圖片] ........ [刪除圖片 / 使用預設] ###
         buttonRow = QHBoxLayout()
-        uploadButton = QPushButton("上傳圖片覆蓋")
+
+        self.toggleArrow = QToolButton(self)    # 預覽圖收合箭頭，只有可收合且有圖時才出現
+        self.toggleArrow.setText("▶")
+        self.toggleArrow.setCheckable(True)
+        self.toggleArrow.setStyleSheet("border: none;")
+        self.toggleArrow.toggled.connect(self.onToggled)
+        self.toggleArrow.hide()
+        if collapsible:
+            sizePolicy = self.toggleArrow.sizePolicy()
+            sizePolicy.setRetainSizeWhenHidden(True)    # 隱藏時仍佔位，避免圖片出現時按鈕位移
+            self.toggleArrow.setSizePolicy(sizePolicy)
+            buttonRow.addWidget(self.toggleArrow)
+
+        generateButton = QPushButton("產生圖片")
+        generateButton.clicked.connect(self.onGenerate)
+        buttonRow.addWidget(generateButton)
+
+        uploadButton = QPushButton("上傳圖片")
         uploadButton.clicked.connect(self.onUploadImage)
         buttonRow.addWidget(uploadButton)
 
-        self.clearButton = QPushButton("改回自動產生")
-        self.clearButton.setVisible(imagePath is not None)
-        self.clearButton.clicked.connect(self.onClearOverride)
-        buttonRow.addWidget(self.clearButton)
         buttonRow.addStretch()
+
+        self.rightButton = QPushButton()    # 自動圖狀態 → 刪除圖片；上傳或已刪除狀態 → 使用預設
+        self.rightButton.clicked.connect(self.onRightClicked)
+        buttonRow.addWidget(self.rightButton)
         layout.addLayout(buttonRow)
 
-        if collapsible:
-            self.previewWidget = CollapsibleImage()
-        else:
-            self.previewWidget = QLabel()
-            self.previewWidget.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.previewWidget)
+        self.imageLabel = QLabel()
+        self.imageLabel.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.imageLabel)
 
+        self.updateRightButton()
         self.refreshPreview()
+
+    def isAutoImage(self):
+        return self.imagePath is None and not self.noImage
 
     def onFieldChanged(self):
         self.changed.emit()
         self.previewTimer.start()    # 每次輸入重新計時
 
+    def onToggled(self, checked):
+        self.toggleArrow.setText("▼" if checked else "▶")
+        self.updatePreviewVisibility()
+
+    def applyImageState(self, expand):    # 圖片狀態變動的共用收尾
+        self.updateRightButton()
+        self.changed.emit()
+        self.refreshPreview(expand)
+
+    def setAutoImage(self):    # 回到自動生成圖並展開
+        self.imagePath = None
+        self.noImage = False
+        self.applyImageState(expand=True)
+
+    def onGenerate(self):    # 一律改用自動生成圖，重新產生並展開
+        self.setAutoImage()
+
     def onUploadImage(self):
         path, _ = QFileDialog.getOpenFileName(self, "選擇圖片", "", "Images (*.png *.jpg *.jpeg)")
         if path:
             self.imagePath = path
-            self.clearButton.setVisible(True)
-            self.changed.emit()
-            self.refreshPreview()
+            self.noImage = False
+            self.applyImageState(expand=True)
 
-    def onClearOverride(self):
-        self.imagePath = None
-        self.clearButton.setVisible(False)
-        self.changed.emit()
+    def onRightClicked(self):
+        if self.isAutoImage():    # 刪除圖片
+            self.imagePath = None
+            self.noImage = True
+            self.applyImageState(expand=False)
+        else:    # 使用預設
+            self.setAutoImage()
+
+    def updateRightButton(self):
+        self.rightButton.setText("刪除圖片" if self.isAutoImage() else "使用預設")
+
+    def setOrientation(self, orientation):    # 開局視角變更時由外部呼叫
+        self.orientation = orientation
         self.refreshPreview()
 
     def getPgn(self):
@@ -105,16 +121,29 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽（自動產生或�
     def getImagePath(self):
         return self.imagePath
 
-    def refreshPreview(self):
-        rawBytes = resolveImageBytes(self.getPgn(), self.imagePath)
+    def getNoImage(self):
+        return self.noImage
+
+    def refreshPreview(self, expand=False):    # expand=True 或圖片剛出現時，自動展開預覽
+        rawBytes = resolveImageBytes(self.getPgn(), self.imagePath, self.orientation, self.noImage)
         pixmap = None
         if rawBytes:
             pixmap = QPixmap()
             pixmap.loadFromData(rawBytes)
 
-        if self.collapsible:
-            self.previewWidget.setPixmap(pixmap)
-        elif pixmap and not pixmap.isNull():
-            self.previewWidget.setPixmap(pixmap.scaledToWidth(280, Qt.SmoothTransformation))
+        hasImage = pixmap is not None and not pixmap.isNull()
+        if hasImage:
+            self.imageLabel.setPixmap(pixmap.scaledToWidth(PREVIEW_WIDTH, Qt.SmoothTransformation))
         else:
-            self.previewWidget.clear()
+            self.imageLabel.clear()
+
+        wasImage = self.hadImage
+        self.hadImage = hasImage
+        if self.collapsible and hasImage and (expand or not wasImage):
+            self.toggleArrow.setChecked(True)
+        self.updatePreviewVisibility()
+
+    def updatePreviewVisibility(self):
+        if self.collapsible:
+            self.toggleArrow.setVisible(self.hadImage)
+        self.imageLabel.setVisible(self.hadImage and (not self.collapsible or self.toggleArrow.isChecked()))

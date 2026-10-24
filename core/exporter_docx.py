@@ -89,8 +89,8 @@ def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 
     return paragraph
 
 
-def addImageIfExists(doc, pgn, imagePath):
-    rawBytes = resolveImageBytes(pgn, imagePath)
+def addImageIfExists(doc, pgn, imagePath, orientation, noImage):
+    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage)
     if rawBytes:
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 
@@ -103,9 +103,9 @@ def addDescriptionIfExists(doc, obj, color=None):    # 直接顯示說明正文�
             run.font.color.rgb = color
 
 
-def addLineSection(doc, line):
+def addLineSection(doc, line, orientation):
     addPgnParagraph(doc, line.pgn)
-    addImageIfExists(doc, line.pgn, line.imagePath)
+    addImageIfExists(doc, line.pgn, line.imagePath, orientation, line.noImage)
 
 
 def exportDocx(opening, outputPath):
@@ -115,10 +115,11 @@ def exportDocx(opening, outputPath):
     doc.add_heading(opening.name, level=1)
     if opening.description:
         doc.add_paragraph(opening.description)
+    doc.add_paragraph(f"棋局視角: {opening.orientation.capitalize()}")
 
     doc.add_heading("基本局面", level=2)
     addPgnParagraph(doc, opening.startingPgn)
-    addImageIfExists(doc, opening.startingPgn, opening.startingImagePath)
+    addImageIfExists(doc, opening.startingPgn, opening.startingImagePath, opening.orientation, opening.startingNoImage)
 
     for variant in opening.variants:
         addHorizontalRule(doc)
@@ -126,12 +127,12 @@ def exportDocx(opening, outputPath):
         addDescriptionIfExists(doc, variant)
 
         for line in variant.lines:    # Line 排在子分類之前
-            addLineSection(doc, line)
+            addLineSection(doc, line, opening.orientation)
 
         for sub in variant.subCategories:
             doc.add_heading(sub.name, level=3)
             addDescriptionIfExists(doc, sub)
             for line in sub.lines:
-                addLineSection(doc, line)
+                addLineSection(doc, line, opening.orientation)
 
     doc.save(outputPath)

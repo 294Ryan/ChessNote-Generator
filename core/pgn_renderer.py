@@ -6,7 +6,7 @@ from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import QByteArray, QBuffer, QIODevice
 
-def renderPgnToPng(pgn, boardSize=400):
+def renderPgnToPng(pgn, boardSize=400, orientation="white"):
     game = chess.pgn.read_game(io.StringIO(pgn))
     if game is None:
         return None    # PGN 無法解析
@@ -15,7 +15,7 @@ def renderPgnToPng(pgn, boardSize=400):
     for move in game.mainline_moves():
         board.push(move)
 
-    svgData = chess.svg.board(board, size=boardSize)
+    svgData = chess.svg.board(board, size=boardSize, orientation=chess.BLACK if orientation == "black" else chess.WHITE)
 
     renderer = QSvgRenderer(QByteArray(svgData.encode("utf-8")))
     image = QImage(boardSize, boardSize, QImage.Format_ARGB32)
@@ -35,7 +35,10 @@ def savePngToFile(pngBytes, filePath):
         f.write(pngBytes)
 
 
-def resolveImageBytes(pgn, imagePath):
+def resolveImageBytes(pgn, imagePath, orientation="white", noImage=False):
+    if noImage:
+        return None    # 使用者刻意刪除圖片
+
     if imagePath:    # 有手動上傳圖則優先使用，直接讀取原始 bytes
         with open(imagePath, "rb") as f:
             return f.read()
@@ -43,4 +46,4 @@ def resolveImageBytes(pgn, imagePath):
     if not pgn.strip():
         return None    # 沒有 PGN 也沒有上傳圖，不顯示
 
-    return renderPgnToPng(pgn)    # 回傳 None 代表 PGN 無法解析
+    return renderPgnToPng(pgn, orientation=orientation)    # 回傳 None 代表 PGN 無法解析

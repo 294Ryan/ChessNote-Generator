@@ -1,7 +1,8 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QLabel, QToolButton, QFrame
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QLabel, QToolButton, QFrame, QAbstractItemView
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 
 TREE_LINE_LABEL_LENGTH = 24    # Line 項目顯示的 PGN 字數上限
+TYPE_ROLE = Qt.UserRole + 2    # item 資料：節點類型 variant / subcategory / line（節點 id 在 Qt.UserRole + 1）
 INDENT_WIDTH = 18    # 每層縮排的像素寬度，需與 editor_panel 的視覺比例一致（樹狀面板較窄，用較小值）
 
 COLOR_OPENING = "#6b7280"
@@ -70,9 +71,48 @@ class ActionRowButton(QToolButton):    # 「+ 新增 XXX」固定動作列，不
     def __init__(self, text, onClick, indentLevel=0):
         super().__init__()
         self.setText(text)
-        leftPadding = 4 + indentLevel * INDENT_WIDTH + 30    # 30 約為色條+展開箭頭區域寬度，對齊同層節點文字
+        leftPadding = 4 + indentLevel * INDENT_WIDTH    # 與新增後節點的色條左緣對齊
         self.setStyleSheet(f"text-align: left; border: none; color: gray; padding-left: {leftPadding}px;")
         self.clicked.connect(onClick)
+
+
+class DragSortTree(QTreeWidget):    # 只允許同父層、同類型的節點互換順序，實際調序交給外部改 model 後重建
+    reorderRequested = pyqtSignal(str, str, bool)    # (draggedId, targetId, insertAfter)
+
+    def __init__(self):
+        super().__init__()
+        self.setDragDropMode(QAbstractItemView.InternalMove)
+        self.setDropIndicatorShown(True)
+
+    def parentIdOf(self, item):
+        parent = item.parent()
+        return parent.data(0, Qt.UserRole + 1) if parent else ""
+
+    def findDropTarget(self, event):    # 合法回傳 (draggedId, targetId, insertAfter)，否則 None
+        source = self.currentItem()
+        target = self.itemAt(event.pos())
+        if source is None or target is None or target is source:
+            return None
+        sourceType = source.data(0, TYPE_ROLE)
+        if not sourceType or sourceType != target.data(0, TYPE_ROLE):
+            return None
+        if self.parentIdOf(source) != self.parentIdOf(target):
+            return None
+        insertAfter = event.pos().y() > self.visualItemRect(target).center().y()
+        return source.data(0, Qt.UserRole + 1), target.data(0, Qt.UserRole + 1), insertAfter
+
+    def dragMoveEvent(self, event):
+        if self.findDropTarget(event) is None:
+            event.ignore()
+            return
+        super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        result = self.findDropTarget(event)
+        event.setDropAction(Qt.IgnoreAction)    # 不讓 Qt 自己搬動項目，避免原項目被移除
+        event.accept()
+        if result:
+            QTimer.singleShot(0, lambda: self.reorderRequested.emit(*result))    # 等拖曳結束後再重建樹
 
 
 class TreePanel(QWidget):
@@ -81,13 +121,15 @@ class TreePanel(QWidget):
     addSubCategoryRequested = pyqtSignal(str)    # variantId
     addLineRequested = pyqtSignal(str, str)    # (parentType, parentId)  parentType: variant | subcategory
     deleteRequested = pyqtSignal(str, str)    # (nodeType, nodeId)
+    reorderRequested = pyqtSignal(str, str, bool)    # (draggedId, targetId, insertAfter)
 
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.tree = QTreeWidget()
+        self.tree = DragSortTree()
+        self.tree.reorderRequested.connect(self.reorderRequested)
         self.tree.setHeaderHidden(True)
         self.tree.setIndentation(0)    # 關閉 Qt 原生縮排，改由 TreeRowWidget 自行控制
         self.tree.setRootIsDecorated(False)    # 關閉原生展開箭頭，改用自製 toggle 按鈕
@@ -105,6 +147,7 @@ class TreePanel(QWidget):
 
         rootItem = QTreeWidgetItem(self.tree)
         rootItem.setData(0, Qt.UserRole + 1, "opening")
+        rootItem.setFlags(rootItem.flags() & ~Qt.ItemIsDragEnabled)
         rootRow = TreeRowWidget("開局基本資訊", indentLevel=0, accentColor=COLOR_OPENING, showDelete=False)
         self.tree.setItemWidget(rootItem, 0, rootRow)
 
@@ -117,6 +160,7 @@ class TreePanel(QWidget):
     def addVariantItem(self, parent, variant):
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole + 1, variant.id)
+        item.setData(0, TYPE_ROLE, "variant")
         row = TreeRowWidget(variant.name or "未命名 Variant", indentLevel=0, accentColor=COLOR_VARIANT, hasToggle=True)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("variant", variant.id))
         row.toggleClicked.connect(lambda: self.toggleItem(item, row))
@@ -124,15 +168,15 @@ class TreePanel(QWidget):
 
         for line in variant.lines:    # Line 排在子分類之前
             self.addLineItem(item, line, indentLevel=1)
+        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1)    # 新增的 Line 會接在最後一條 Line 後面
         for sub in variant.subCategories:
             self.addSubCategoryItem(item, sub)
-
-        self.addActionItem(item, "+ 新增子分類", lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1)
-        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1)
+        self.addActionItem(item, "+ 新增子分類", lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1)    # 新增的子分類會接在最後一個子分類後面
 
     def addSubCategoryItem(self, parent, sub):
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole + 1, sub.id)
+        item.setData(0, TYPE_ROLE, "subcategory")
         row = TreeRowWidget(sub.name or "未命名子分類", indentLevel=1, accentColor=COLOR_SUBCATEGORY, hasToggle=True)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("subcategory", sub.id))
         row.toggleClicked.connect(lambda: self.toggleItem(item, row))
@@ -146,12 +190,14 @@ class TreePanel(QWidget):
     def addLineItem(self, parent, line, indentLevel):
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole + 1, line.id)
+        item.setData(0, TYPE_ROLE, "line")
         row = TreeRowWidget(makeLineLabel(line.pgn), indentLevel=indentLevel, accentColor=COLOR_LINE)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("line", line.id))
         self.tree.setItemWidget(item, 0, row)
 
     def addActionItem(self, parent, text, onClick, indentLevel):    # 固定的「+ 新增」動作列
         item = QTreeWidgetItem(parent)
+        item.setFlags(item.flags() & ~Qt.ItemIsDragEnabled)
         self.tree.setItemWidget(item, 0, ActionRowButton(text, onClick, indentLevel))
 
     def toggleItem(self, item, row):    # 自製展開/折疊，取代 Qt 原生箭頭

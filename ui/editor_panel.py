@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QFrame, QPushButton, QSizePolicy, QApplication
+from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QFrame, QPushButton, QSizePolicy, QApplication, QComboBox
 from PyQt5.QtCore import Qt, QMimeData, QTimer
 from PyQt5.QtGui import QDrag, QCursor
 from core.models import moveItem
@@ -78,6 +78,7 @@ class EditorPanel(QScrollArea):
         self.nodeWidgets = {}    # nodeId -> 區塊 widget，供樹狀導覽跳轉用
         self.blocks = {}    # nodeId -> 該節點與所有子孫的 frame（由上到下），拖曳時用來算整塊範圍
         self.siblingLists = {}    # nodeId -> 該節點所在的 model list，只能在同一個 list 內調序
+        self.imageEditors = []    # 所有圖片編輯器，棋盤視角變更時統一刷新預覽
 
         self.draggingId = None
         self.dropIndicator = QFrame(self.container)    # 拖曳時的插入位置指示線
@@ -95,7 +96,9 @@ class EditorPanel(QScrollArea):
         self.nodeWidgets.clear()
         self.blocks.clear()
         self.siblingLists.clear()
+        self.imageEditors.clear()
 
+        self.currentOrientation = opening.orientation    # Line 編輯器建立時取用
         self.addOpeningSection(opening)
 
         for variant in opening.variants:
@@ -120,6 +123,14 @@ class EditorPanel(QScrollArea):
         nameEdit.textChanged.connect(lambda text: self.updateField(opening, "name", text))
         layout.addWidget(nameEdit)
 
+        layout.addWidget(QLabel("棋盤視角"))
+        orientationCombo = QComboBox()
+        orientationCombo.addItem("White", "white")
+        orientationCombo.addItem("Black", "black")
+        orientationCombo.setCurrentIndex(0 if opening.orientation == "white" else 1)
+        orientationCombo.currentIndexChanged.connect(lambda: self.onOrientationChanged(opening, orientationCombo.currentData()))
+        layout.addWidget(orientationCombo, 0, Qt.AlignLeft)
+
         layout.addWidget(QLabel("開局概述"))
         descEdit = QTextEdit(opening.description)
         descEdit.setMaximumHeight(60)
@@ -127,8 +138,9 @@ class EditorPanel(QScrollArea):
         layout.addWidget(descEdit)
 
         layout.addWidget(QLabel("起始 PGN"))
-        pgnEditor = PgnImageEditor(opening.startingPgn, opening.startingImagePath, collapsible=False)
+        pgnEditor = PgnImageEditor(opening.startingPgn, opening.startingImagePath, opening.startingNoImage, opening.orientation, collapsible=False)
         pgnEditor.changed.connect(lambda: self.updateStartingPgn(opening, pgnEditor))
+        self.imageEditors.append(pgnEditor)
         layout.addWidget(pgnEditor)
 
         self.registerSection("opening", frame)
@@ -162,8 +174,9 @@ class EditorPanel(QScrollArea):
         layout = frame.contentLayout
         layout.addWidget(self.makeHeading("LINE", COLOR_LINE, DragHandle(line.id, frame)))
 
-        pgnEditor = PgnImageEditor(line.pgn, line.imagePath, collapsible=True)
+        pgnEditor = PgnImageEditor(line.pgn, line.imagePath, line.noImage, self.currentOrientation, collapsible=True)
         pgnEditor.changed.connect(lambda: self.updateLinePgn(line, pgnEditor))
+        self.imageEditors.append(pgnEditor)
         layout.addWidget(pgnEditor)
 
         self.registerSection(line.id, frame, siblings, ancestorIds)
@@ -229,14 +242,22 @@ class EditorPanel(QScrollArea):
         setattr(obj, attrName, value)
         self.onModelChanged()
 
+    def onOrientationChanged(self, opening, orientation):
+        opening.orientation = orientation
+        self.currentOrientation = orientation
+        for editor in self.imageEditors:
+            editor.setOrientation(orientation)
+
     def updateStartingPgn(self, opening, pgnEditor):
         opening.startingPgn = pgnEditor.getPgn()
         opening.startingImagePath = pgnEditor.getImagePath()
+        opening.startingNoImage = pgnEditor.getNoImage()
         self.onModelChanged()
 
     def updateLinePgn(self, line, pgnEditor):
         line.pgn = pgnEditor.getPgn()
         line.imagePath = pgnEditor.getImagePath()
+        line.noImage = pgnEditor.getNoImage()
         self.onModelChanged()
 
     def scrollToNode(self, nodeId):

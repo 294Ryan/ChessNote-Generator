@@ -3,8 +3,8 @@ import base64
 from jinja2 import Environment, FileSystemLoader
 from core.pgn_renderer import resolveImageBytes
 
-def buildImageDataUri(pgn, imagePath):
-    rawBytes = resolveImageBytes(pgn, imagePath)
+def buildImageDataUri(pgn, imagePath, orientation, noImage):
+    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage)
     if rawBytes is None:
         return None
 
@@ -22,8 +22,9 @@ def buildContext(opening):
     context = {
         "name": opening.name,
         "description": opening.description,
+        "orientation": opening.orientation.capitalize(),
         "startingPgn": opening.startingPgn,
-        "startingImage": buildImageDataUri(opening.startingPgn, opening.startingImagePath),
+        "startingImage": buildImageDataUri(opening.startingPgn, opening.startingImagePath, opening.orientation, opening.startingNoImage),
         "variants": [],
     }
 
@@ -32,13 +33,13 @@ def buildContext(opening):
             "name": variant.name,
             "description": variant.description,
             "subCategories": [],
-            "lines": [buildLineContext(l) for l in variant.lines],
+            "lines": [buildLineContext(l, opening.orientation) for l in variant.lines],
         }
         for sub in variant.subCategories:
             variantData["subCategories"].append({
                 "name": sub.name,
                 "description": sub.description,
-                "lines": [buildLineContext(l) for l in sub.lines],
+                "lines": [buildLineContext(l, opening.orientation) for l in sub.lines],
             })
         context["variants"].append(variantData)
 
@@ -47,7 +48,7 @@ def buildContext(opening):
 
 PGN_PREVIEW_LENGTH = 60    # 折疊時 PGN 預覽的字元數上限
 
-def buildLineContext(line):
+def buildLineContext(line, orientation):
     pgn = line.pgn
     isTruncated = len(pgn) > PGN_PREVIEW_LENGTH
     pgnPreview = pgn[:PGN_PREVIEW_LENGTH] + "...more" if isTruncated else pgn
@@ -55,7 +56,7 @@ def buildLineContext(line):
     return {
         "pgn": pgn,
         "pgnPreview": pgnPreview,
-        "image": buildImageDataUri(line.pgn, line.imagePath),
+        "image": buildImageDataUri(line.pgn, line.imagePath, orientation, line.noImage),
     }
 
 

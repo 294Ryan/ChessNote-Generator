@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QSplitter, QFileDialog, QMessageBox
 from PyQt5.QtCore import Qt
 
-from core.models import Opening
+from core.models import Opening, moveItem
 from core.project_io import saveProject, loadProject
 from core.exporter_docx import exportDocx
 from core.exporter_html import exportHtml
@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         self.treePanel.addSubCategoryRequested.connect(self.onAddSubCategory)
         self.treePanel.addLineRequested.connect(self.onAddLine)
         self.treePanel.deleteRequested.connect(self.onDeleteNode)
+        self.treePanel.reorderRequested.connect(self.onReorder)
 
     def refreshUI(self):    # 結構變動（新增/刪除/存讀檔）後重建左右兩側
         self.treePanel.rebuild(self.opening)
@@ -89,6 +90,24 @@ class MainWindow(QMainWindow):
                     sub.lines = [l for l in sub.lines if l.id != nodeId]
 
         self.refreshUI()
+
+    ### 左側樹拖曳調序 ###
+    def allSiblingLists(self):    # 所有「可互相調序」的 list
+        yield self.opening.variants
+        for variant in self.opening.variants:
+            yield variant.lines
+            yield variant.subCategories
+            for sub in variant.subCategories:
+                yield sub.lines
+
+    def onReorder(self, draggedId, targetId, insertAfter):
+        for siblings in self.allSiblingLists():
+            ids = [n.id for n in siblings]
+            if draggedId in ids and targetId in ids:    # 兩者必須在同一個 list，否則是跨層級，忽略
+                targetIndex = ids.index(targetId) + (1 if insertAfter else 0)
+                if moveItem(siblings, draggedId, targetIndex):
+                    self.refreshUI()
+                return
 
     ### 查找節點 ###
     def findVariant(self, variantId):
