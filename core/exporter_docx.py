@@ -9,7 +9,7 @@ from core.pgn_renderer import resolveImageBytes
 BODY_FONT = "Cambria"    # 襯線字體，呼應 html 版的出版品質感（僅影響英數字元）
 BODY_FONT_CJK = "PMingLiU"    # 新細明體，中文字元搭配用，襯線風格與 Cambria 呼應
 PGN_FONT = "Consolas"    # 等寬字體，讓棋步對齊更整齊
-LINE_SIZE = Pt(11.5)    # Line 名稱 / Line 說明 / PGN 共用字級，層級靠粗體區分
+LINE_SIZE = Pt(12)    # Line 名稱 / Line 說明 / PGN 共用字級，層級靠粗體區分
 PGN_SIZE = LINE_SIZE
 COLOR_BLACK = RGBColor(0x1a, 0x1a, 0x1a)
 COLOR_SUBCATEGORY = RGBColor(0x4a, 0x4a, 0x4a)    # 子分類標題灰色，比之前再深一點
@@ -36,9 +36,9 @@ def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
     setStyleEastAsiaFont(normalStyle, BODY_FONT_CJK)
 
     headingSpecs = [
-        ("Heading 1", 28, COLOR_BLACK),
+        ("Heading 1", 26, COLOR_BLACK),
         ("Heading 2", 20, COLOR_BLACK),
-        ("Heading 3", 15, COLOR_SUBCATEGORY),
+        ("Heading 3", 16, COLOR_SUBCATEGORY),
     ]
     for levelName, size, color in headingSpecs:
         headingStyle = doc.styles[levelName]
