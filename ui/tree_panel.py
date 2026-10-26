@@ -11,7 +11,7 @@ COLOR_SUBCATEGORY = "#2f855a"
 COLOR_LINE = "#8a6d3b"
 
 ROW_HEIGHT = 30    # 每列高度（像素），item widget 的高度由這裡決定
-ACTION_ROW_HEIGHT = 24    # 「+ 新增」列高度；平常隱藏但仍佔位，避免滑過時版面跳動
+ACTION_ROW_HEIGHT = 24    # 「+ 新增」列高度
 CHIP_PADDING = 6    # 色塊內左側留白，「+ 新增」列的 + 也對齊這個位置
 CHIP_ALPHA = 0.10    # 節點色塊底色的透明度
 CHIP_HOVER_ALPHA = 0.20    # 滑過時的底色透明度
@@ -95,17 +95,19 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
 class ActionRow(QWidget):    # 「+ 新增 XXX」固定動作列，不屬於任何節點資料；永遠靠左，+ 對齊新增後節點的色條
     hovered = pyqtSignal(object)
 
-    def __init__(self, text, onClick, indentLevel, accentColor, ownerId, scopeIds):
+    def __init__(self, text, onClick, indentLevel, accentColor, ownerId, scopeIds, excludeIds=()):
         super().__init__()
         self.onClick = onClick
         self.ownerId = ownerId    # 滑鼠位於此區塊內時才顯示本列
         self.scopeIds = tuple(scopeIds)
-        self.revealed = False
+        self.excludeIds = frozenset(excludeIds)    # 滑鼠位於這些區塊內時隱藏本列（避免本列在游標上方展開把內容往下推）
+        self.item = None    # 對應的 QTreeWidgetItem，顯示/隱藏靠它
+        self.setCursor(Qt.PointingHandCursor)
 
         outer = QHBoxLayout(self)
         outer.setContentsMargins(4 + indentLevel * INDENT_WIDTH, 2, 4, 2)
 
-        chip = self.chip = QFrame()    # 平常整塊隱藏（仍佔位），顯示時滑過會出現新增項目的同色系淡底
+        chip = QFrame()    # 平常透明，滑過顯示新增項目的同色系淡底
         chip.setObjectName("chip")
         chip.setStyleSheet(
             "#chip { background: transparent; border-radius: 4px; }"
@@ -119,12 +121,6 @@ class ActionRow(QWidget):    # 「+ 新增 XXX」固定動作列，不屬於任�
         layout.setContentsMargins(CHIP_PADDING, 0, 4, 0)
         layout.addWidget(QLabel(text))
         layout.addStretch()
-        self.setRevealed(False)
-
-    def setRevealed(self, revealed):
-        self.revealed = revealed
-        self.chip.setVisible(revealed)
-        self.setCursor(Qt.PointingHandCursor if revealed else Qt.ArrowCursor)
 
     def enterEvent(self, event):
         self.hovered.emit(self.scopeIds)
@@ -133,7 +129,7 @@ class ActionRow(QWidget):    # 「+ 新增 XXX」固定動作列，不屬於任�
         event.accept()    # 接住按下事件，後續的放開事件才會送到這裡
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton and self.revealed:    # 隱藏狀態下不回應點擊
+        if event.button() == Qt.LeftButton:
             self.onClick()
 
 
@@ -217,9 +213,10 @@ class TreePanel(QWidget):
             self.activeScopes = set(scopeIds)
             self.applyActiveScopes()
 
-    def applyActiveScopes(self):
+    def applyActiveScopes(self):    # 沒顯示的「+」列直接隱藏整列（不佔空間），滑到所屬區塊才展開
         for row in self.actionRows:
-            row.setRevealed(row.ownerId in self.activeScopes)
+            revealed = row.ownerId in self.activeScopes and not (self.activeScopes & row.excludeIds)
+            row.item.setHidden(not revealed)
 
     def onItemClicked(self, item, column):
         nodeId = item.data(0, Qt.UserRole + 1)
@@ -261,7 +258,7 @@ class TreePanel(QWidget):
 
         for number, line in enumerate(variant.lines, 1):    # Line 排在子分類之前
             self.addLineItem(item, line, indentLevel=1, number=number, scope=scope)
-        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1, accentColor=COLOR_LINE, ownerId=variant.id, scopeIds=scope)    # 新增的 Line 會接在最後一條 Line 後面
+        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1, accentColor=COLOR_LINE, ownerId=variant.id, scopeIds=scope, excludeIds=[sub.id for sub in variant.subCategories])    # 在子分類內時隱藏，因為它位於子分類上方    # 新增的 Line 會接在最後一條 Line 後面
         for sub in variant.subCategories:
             self.addSubCategoryItem(item, sub, scope)
         self.addActionItem(item, "+ 新增子分類", lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1, accentColor=COLOR_SUBCATEGORY, ownerId=variant.id, scopeIds=scope)    # 新增的子分類會接在最後一個子分類後面
@@ -295,11 +292,12 @@ class TreePanel(QWidget):
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("line", line.id))
         self.tree.setItemWidget(item, 0, row)
 
-    def addActionItem(self, parent, text, onClick, indentLevel, accentColor, ownerId, scopeIds):    # 固定的「+ 新增」動作列
+    def addActionItem(self, parent, text, onClick, indentLevel, accentColor, ownerId, scopeIds, excludeIds=()):    # 固定的「+ 新增」動作列
         item = QTreeWidgetItem(parent)
         item.setFlags(item.flags() & ~Qt.ItemIsDragEnabled)
         item.setSizeHint(0, QSize(0, ACTION_ROW_HEIGHT))
-        row = ActionRow(text, onClick, indentLevel, accentColor, ownerId, scopeIds)
+        row = ActionRow(text, onClick, indentLevel, accentColor, ownerId, scopeIds, excludeIds)
+        row.item = item
         row.hovered.connect(self.onRowHovered)
         self.actionRows.append(row)
         self.tree.setItemWidget(item, 0, row)

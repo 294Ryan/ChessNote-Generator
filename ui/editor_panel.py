@@ -116,7 +116,7 @@ class EditorPanel(QScrollArea):
     def addOpeningSection(self, opening):
         frame = self.makeFrame(indentLevel=0, accentColor=COLOR_OPENING)
         layout = frame.contentLayout
-        layout.addWidget(self.makeHeading("📋 開局基本資訊", COLOR_OPENING))
+        layout.addWidget(self.makeHeading("開局基本資訊", COLOR_OPENING))
 
         layout.addWidget(QLabel("開局名稱"))
         nameEdit = QLineEdit(opening.name)
