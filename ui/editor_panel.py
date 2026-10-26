@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLab
 from PyQt5.QtCore import Qt, QMimeData, QTimer
 from PyQt5.QtGui import QDrag, QCursor
 from core.models import moveItem
-from ui.editor_style import EDITOR_STYLE, CARD_RADIUS, cardStyle
+from ui.editor_style import editorStyle, CARD_RADIUS, cardStyle
 from ui.line_widget import PgnImageEditor
 
 INDENT_WIDTH = 28    # 每層縮排的像素寬度，呈現 Variant > 子分類 > Line 的從屬關係
@@ -70,7 +70,7 @@ class EditorPanel(QScrollArea):
         self.onModelChanged = onModelChanged    # 欄位變動時通知 MainWindow 更新樹狀標籤
         self.onStructureChanged = onStructureChanged    # 拖曳調序後通知 MainWindow 重建左右兩側
         self.setWidgetResizable(True)
-        self.setStyleSheet(EDITOR_STYLE)
+        self.applyTheme()
 
         self.container = DragSortContainer(self)
         self.container.setObjectName("editorContainer")
@@ -117,6 +117,9 @@ class EditorPanel(QScrollArea):
                     self.addLineSection(line, 2, sub.lines, (variant.id, sub.id))
 
         self.layout.addStretch()
+
+    def applyTheme(self):    # 主題切換時重設面板樣式；卡片樣式在 rebuild 重建時套用
+        self.setStyleSheet(editorStyle())
 
     ### 區塊建構 ###
     def addOpeningSection(self, opening):

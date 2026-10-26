@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QFileDialog, QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QFileDialog, QMessageBox, QToolButton
+from PyQt5.QtCore import Qt, QTimer
 
 from core.models import Opening, moveItem
 from core.project_io import saveProject, loadProject
@@ -7,6 +7,7 @@ from core.exporter_docx import exportDocx
 from core.exporter_html import exportHtml
 from ui.tree_panel import TreePanel
 from ui.editor_panel import EditorPanel
+from ui.theme import setTheme, isDark, windowStyle
 
 
 class MainWindow(QMainWindow):
@@ -29,6 +30,7 @@ class MainWindow(QMainWindow):
 
         self.buildMenu()
         self.connectSignals()
+        self.applyTheme()
         self.refreshUI()
 
     def buildMenu(self):
@@ -39,6 +41,28 @@ class MainWindow(QMainWindow):
         exportMenu = self.menuBar().addMenu("匯出")
         exportMenu.addAction("匯出 .docx", self.onExportDocx)
         exportMenu.addAction("匯出 .html", self.onExportHtml)
+
+        self.themeButton = QToolButton()    # 選單列右側的主題切換鈕
+        self.themeButton.setObjectName("themeToggle")
+        self.themeButton.setCursor(Qt.PointingHandCursor)
+        self.themeButton.clicked.connect(self.onToggleTheme)
+        self.menuBar().setCornerWidget(self.themeButton, Qt.TopRightCorner)
+
+    ### 主題 ###
+    def applyTheme(self):
+        self.setStyleSheet(windowStyle())
+        self.treePanel.applyTheme()
+        self.editorPanel.applyTheme()
+        self.themeButton.setText("☀  淺色" if isDark() else "☾  深色")    # 顯示點擊後會切換成的主題
+        self.themeButton.setToolTip("切換為淺色主題" if isDark() else "切換為深色主題")
+
+    def onToggleTheme(self):
+        setTheme("light" if isDark() else "dark")
+        self.applyTheme()
+        scrollBar = self.editorPanel.verticalScrollBar()
+        scrollValue = scrollBar.value()
+        self.refreshUI()    # 重建兩側，節點與卡片才會吃到新色票
+        QTimer.singleShot(0, lambda: scrollBar.setValue(scrollValue))
 
     def connectSignals(self):
         self.treePanel.nodeSelected.connect(self.editorPanel.scrollToNode)

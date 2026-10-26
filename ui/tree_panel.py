@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QLabel, QToolButton, QFrame, QAbstractItemView
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QSize
 import textwrap
+from ui.theme import palette, scrollbarStyle
 
 TYPE_ROLE = Qt.UserRole + 2    # item 資料：節點類型 variant / subcategory / line（節點 id 在 Qt.UserRole + 1）
 INDENT_WIDTH = 18    # 每層縮排的像素寬度，需與 editor_panel 的視覺比例一致（樹狀面板較窄，用較小值）
@@ -13,8 +14,6 @@ COLOR_LINE = "#8a6d3b"
 ROW_HEIGHT = 30    # 每列高度（像素），item widget 的高度由這裡決定
 ACTION_ROW_HEIGHT = 24    # 「+ 新增」列高度
 CHIP_PADDING = 6    # 色塊內左側留白，「+ 新增」列的 + 也對齊這個位置
-CHIP_ALPHA = 0.10    # 節點色塊底色的透明度
-CHIP_HOVER_ALPHA = 0.20    # 滑過時的底色透明度
 TOOLTIP_WIDTH = 48    # tooltip 內 PGN 每行字數
 
 
@@ -36,9 +35,10 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
 
         chip = QFrame()    # 整列色塊：節點同色系的淡底，滑過加深
         chip.setObjectName("chip")
-        chip.setStyleSheet(
-            f"#chip {{ background: {tint(accentColor, CHIP_ALPHA)}; border-radius: 4px; }}"
-            f"#chip:hover {{ background: {tint(accentColor, CHIP_HOVER_ALPHA)}; }}"
+        p = palette()
+        chip.setStyleSheet(    # 底色與滑過底色的透明度在 ui/theme.py（chipAlpha / chipHoverAlpha）
+            f"#chip {{ background: {tint(accentColor, p.chipAlpha)}; border-radius: 4px; }}"
+            f"#chip:hover {{ background: {tint(accentColor, p.chipHoverAlpha)}; }}"
         )
         outer.addWidget(chip)
 
@@ -55,7 +55,7 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
         if hasToggle:
             self.toggleButton = QToolButton()
             self.toggleButton.setText("▼" if expanded else "▶")
-            self.toggleButton.setStyleSheet("border: none; background: transparent;")
+            self.toggleButton.setStyleSheet(f"border: none; background: transparent; color: {p.ink};")
             self.toggleButton.clicked.connect(self.toggleClicked.emit)
             layout.addWidget(self.toggleButton)
         else:
@@ -64,7 +64,7 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
             layout.addWidget(spacer)
 
         self.nameLabel = QLabel(label)
-        self.nameLabel.setStyleSheet("background: transparent;")
+        self.nameLabel.setStyleSheet(f"background: transparent; color: {p.ink};")
         layout.addWidget(self.nameLabel)
         layout.addStretch()
 
@@ -111,7 +111,7 @@ class ActionRow(QWidget):    # 「+ 新增 XXX」固定動作列，不屬於任�
         chip.setObjectName("chip")
         chip.setStyleSheet(
             "#chip { background: transparent; border-radius: 4px; }"
-            f"#chip:hover {{ background: {tint(accentColor, CHIP_ALPHA)}; }}"
+            f"#chip:hover {{ background: {tint(accentColor, palette().chipAlpha)}; }}"
             "#chip QLabel { color: #9ca3af; background: transparent; }"
             f"#chip:hover QLabel {{ color: {accentColor}; }}"
         )
@@ -201,12 +201,16 @@ class TreePanel(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setIndentation(0)    # 關閉 Qt 原生縮排，改由 TreeRowWidget 自行控制
         self.tree.setRootIsDecorated(False)    # 關閉原生展開箭頭，改用自製 toggle 按鈕
-        self.tree.setStyleSheet(    # 拿掉預設的選取/滑過底色與外框，色塊完全由 row 自己負責
-            "QTreeWidget { border: none; outline: 0; }"
-            "QTreeWidget::item, QTreeWidget::item:hover, QTreeWidget::item:selected { background: transparent; }"
-        )
+        self.applyTheme()
         self.tree.itemClicked.connect(self.onItemClicked)
         layout.addWidget(self.tree)
+
+    def applyTheme(self):    # 拿掉預設的選取/滑過底色與外框，色塊完全由 row 自己負責；主題切換後需重建樹讓 row 吃到新色票
+        self.tree.setStyleSheet(
+            f"QTreeWidget {{ border: none; outline: 0; background: {palette().treeBg}; }}"
+            "QTreeWidget::item, QTreeWidget::item:hover, QTreeWidget::item:selected { background: transparent; }"
+            + scrollbarStyle()
+        )
 
     def onRowHovered(self, scopeIds):    # 滑鼠進入某列：只顯示所屬區塊的「+ 新增」列
         if set(scopeIds) != self.activeScopes:

@@ -2,7 +2,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPlainTex
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from core.pgn_renderer import resolveImageBytes
-from ui.editor_style import INPUT_BG, INPUT_BORDER, INK_SOFT, INPUT_RADIUS
+from ui.editor_style import INPUT_RADIUS
+from ui.theme import palette
 
 PREVIEW_DEBOUNCE_MS = 300    # 停止輸入多久後才重繪棋盤圖
 PREVIEW_WIDTH = 280    # 預覽圖寬度（像素）
@@ -21,6 +22,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        p = palette()
 
         self.previewTimer = QTimer(self)    # debounce：停止輸入後才重繪棋盤圖
         self.previewTimer.setSingleShot(True)
@@ -39,7 +41,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.toggleArrow = QToolButton(self)    # 預覽圖收合箭頭，只有可收合且有圖時才出現
         self.toggleArrow.setText("▶")
         self.toggleArrow.setCheckable(True)
-        self.toggleArrow.setStyleSheet(f"border: none; background: transparent; color: {INK_SOFT};")
+        self.toggleArrow.setStyleSheet(f"border: none; background: transparent; color: {p.inkSoft};")
         self.toggleArrow.toggled.connect(self.onToggled)
         self.toggleArrow.hide()
         if collapsible:
@@ -62,7 +64,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.imageLabel = QLabel()
         self.imageLabel.setAlignment(Qt.AlignCenter)
         self.imageLabel.setStyleSheet(    # 預覽圖外框，跟輸入框同一套圓角與邊線
-            f"background: {INPUT_BG}; border: 1px solid {INPUT_BORDER}; border-radius: {INPUT_RADIUS}px; padding: 6px;"
+            f"background: {p.inputBg}; border: 1px solid {p.inputBorder}; border-radius: {INPUT_RADIUS}px; padding: 6px;"
         )
         layout.addWidget(self.imageLabel, 0, Qt.AlignLeft)    # 靠左，外框貼著圖片大小
 
