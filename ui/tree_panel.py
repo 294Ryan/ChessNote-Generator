@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QHBoxLayout, QLabel, QToolButton, QFrame, QAbstractItemView
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QSize
+import textwrap
 
-TREE_LINE_LABEL_LENGTH = 24    # Line 項目顯示的 PGN 字數上限
 TYPE_ROLE = Qt.UserRole + 2    # item 資料：節點類型 variant / subcategory / line（節點 id 在 Qt.UserRole + 1）
 INDENT_WIDTH = 18    # 每層縮排的像素寬度，需與 editor_panel 的視覺比例一致（樹狀面板較窄，用較小值）
 
@@ -10,12 +10,16 @@ COLOR_VARIANT = "#2b6cb0"
 COLOR_SUBCATEGORY = "#2f855a"
 COLOR_LINE = "#8a6d3b"
 
+ROW_HEIGHT = 30    # 每列高度（像素），item widget 的高度由這裡決定
+CHIP_PADDING = 6    # 色塊內左側留白，「+ 新增」列的 + 也對齊這個位置
+CHIP_ALPHA = 0.10    # 節點色塊底色的透明度
+CHIP_HOVER_ALPHA = 0.20    # 滑過時的底色透明度
+TOOLTIP_WIDTH = 48    # tooltip 內 PGN 每行字數
 
-def makeLineLabel(pgn):    # Line 沒有名稱，改用 PGN 前段當標籤
-    text = " ".join(pgn.split())
-    if not text:
-        return "（空白 Line）"
-    return text[:TREE_LINE_LABEL_LENGTH] + ("…" if len(text) > TREE_LINE_LABEL_LENGTH else "")
+
+def tint(hexColor, alpha):    # #rrggbb 轉成帶透明度的 rgba，用來做同色系淡底
+    r, g, b = (int(hexColor[i:i + 2], 16) for i in (1, 3, 5))
+    return f"rgba({r}, {g}, {b}, {alpha})"
 
 
 class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數明確指定，不依賴 Qt 原生箭頭機制
@@ -24,8 +28,19 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
 
     def __init__(self, label, indentLevel=0, accentColor="#ccc", showDelete=True, hasToggle=False, expanded=True):
         super().__init__()
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(4 + indentLevel * INDENT_WIDTH, 2, 4, 2)
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(4 + indentLevel * INDENT_WIDTH, 2, 4, 2)
+
+        chip = QFrame()    # 整列色塊：節點同色系的淡底，滑過加深
+        chip.setObjectName("chip")
+        chip.setStyleSheet(
+            f"#chip {{ background: {tint(accentColor, CHIP_ALPHA)}; border-radius: 4px; }}"
+            f"#chip:hover {{ background: {tint(accentColor, CHIP_HOVER_ALPHA)}; }}"
+        )
+        outer.addWidget(chip)
+
+        layout = QHBoxLayout(chip)
+        layout.setContentsMargins(CHIP_PADDING, 0, 4, 0)
         layout.setSpacing(6)
 
         bar = QFrame()    # 左側色條，標示節點類型
@@ -37,7 +52,7 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
         if hasToggle:
             self.toggleButton = QToolButton()
             self.toggleButton.setText("▼" if expanded else "▶")
-            self.toggleButton.setStyleSheet("border: none;")
+            self.toggleButton.setStyleSheet("border: none; background: transparent;")
             self.toggleButton.clicked.connect(self.toggleClicked.emit)
             layout.addWidget(self.toggleButton)
         else:
@@ -46,11 +61,17 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
             layout.addWidget(spacer)
 
         self.nameLabel = QLabel(label)
+        self.nameLabel.setStyleSheet("background: transparent;")
         layout.addWidget(self.nameLabel)
         layout.addStretch()
 
-        self.deleteButton = QToolButton()
+        self.deleteButton = QToolButton()    # 無框的 ✕，平常淡灰，滑過變紅
         self.deleteButton.setText("✕")
+        self.deleteButton.setCursor(Qt.PointingHandCursor)
+        self.deleteButton.setStyleSheet(
+            "QToolButton { border: none; background: transparent; color: #9ca3af; font-size: 12px; padding: 0 4px; }"
+            "QToolButton:hover { color: #e53e3e; }"
+        )
         self.deleteButton.setVisible(False)
         self.deleteButton.setEnabled(showDelete)
         self.deleteButton.clicked.connect(self.deleteClicked.emit)
@@ -67,13 +88,36 @@ class TreeRowWidget(QWidget):    # 單一節點的 row，縮排/色條由參數�
         self.deleteButton.setVisible(False)
 
 
-class ActionRowButton(QToolButton):    # 「+ 新增 XXX」固定動作列，不屬於任何節點資料
-    def __init__(self, text, onClick, indentLevel=0):
+class ActionRow(QWidget):    # 「+ 新增 XXX」固定動作列，不屬於任何節點資料；永遠靠左，+ 對齊新增後節點的色條
+    def __init__(self, text, onClick, indentLevel, accentColor):
         super().__init__()
-        self.setText(text)
-        leftPadding = 4 + indentLevel * INDENT_WIDTH    # 與新增後節點的色條左緣對齊
-        self.setStyleSheet(f"text-align: left; border: none; color: gray; padding-left: {leftPadding}px;")
-        self.clicked.connect(onClick)
+        self.onClick = onClick
+        self.setCursor(Qt.PointingHandCursor)
+
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(4 + indentLevel * INDENT_WIDTH, 2, 4, 2)
+
+        chip = QFrame()    # 平常透明，滑過顯示新增項目的同色系淡底
+        chip.setObjectName("chip")
+        chip.setStyleSheet(
+            "#chip { background: transparent; border-radius: 4px; }"
+            f"#chip:hover {{ background: {tint(accentColor, CHIP_ALPHA)}; }}"
+            "#chip QLabel { color: #9ca3af; background: transparent; }"
+            f"#chip:hover QLabel {{ color: {accentColor}; }}"
+        )
+        outer.addWidget(chip)
+
+        layout = QHBoxLayout(chip)
+        layout.setContentsMargins(CHIP_PADDING, 0, 4, 0)
+        layout.addWidget(QLabel(text))
+        layout.addStretch()
+
+    def mousePressEvent(self, event):
+        event.accept()    # 接住按下事件，後續的放開事件才會送到這裡
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.onClick()
 
 
 class DragSortTree(QTreeWidget):    # 只允許同父層、同類型的節點互換順序，實際調序交給外部改 model 後重建
@@ -136,6 +180,10 @@ class TreePanel(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.setIndentation(0)    # 關閉 Qt 原生縮排，改由 TreeRowWidget 自行控制
         self.tree.setRootIsDecorated(False)    # 關閉原生展開箭頭，改用自製 toggle 按鈕
+        self.tree.setStyleSheet(    # 拿掉預設的選取/滑過底色與外框，色塊完全由 row 自己負責
+            "QTreeWidget { border: none; outline: 0; }"
+            "QTreeWidget::item, QTreeWidget::item:hover, QTreeWidget::item:selected { background: transparent; }"
+        )
         self.tree.itemClicked.connect(self.onItemClicked)
         layout.addWidget(self.tree)
 
@@ -151,57 +199,65 @@ class TreePanel(QWidget):
         rootItem = QTreeWidgetItem(self.tree)
         rootItem.setData(0, Qt.UserRole + 1, "opening")
         rootItem.setFlags(rootItem.flags() & ~Qt.ItemIsDragEnabled)
+        rootItem.setSizeHint(0, QSize(0, ROW_HEIGHT))
         rootRow = TreeRowWidget("開局基本資訊", indentLevel=0, accentColor=COLOR_OPENING, showDelete=False)
         self.tree.setItemWidget(rootItem, 0, rootRow)
 
         for variant in opening.variants:
             self.addVariantItem(self.tree, variant)
 
-        self.addActionItem(self.tree, "+ 新增 Variant", self.addVariantRequested.emit, indentLevel=0)
+        self.addActionItem(self.tree, "+ 新增 Variant", self.addVariantRequested.emit, indentLevel=0, accentColor=COLOR_VARIANT)
         self.tree.expandAll()
 
     def addVariantItem(self, parent, variant):
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole + 1, variant.id)
         item.setData(0, TYPE_ROLE, "variant")
+        item.setSizeHint(0, QSize(0, ROW_HEIGHT))
         row = TreeRowWidget(variant.name or "未命名 Variant", indentLevel=0, accentColor=COLOR_VARIANT, hasToggle=True)
+        row.setToolTip(variant.name)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("variant", variant.id))
         row.toggleClicked.connect(lambda: self.toggleItem(item, row))
         self.tree.setItemWidget(item, 0, row)
 
-        for line in variant.lines:    # Line 排在子分類之前
-            self.addLineItem(item, line, indentLevel=1)
-        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1)    # 新增的 Line 會接在最後一條 Line 後面
+        for number, line in enumerate(variant.lines, 1):    # Line 排在子分類之前
+            self.addLineItem(item, line, indentLevel=1, number=number)
+        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1, accentColor=COLOR_LINE)    # 新增的 Line 會接在最後一條 Line 後面
         for sub in variant.subCategories:
             self.addSubCategoryItem(item, sub)
-        self.addActionItem(item, "+ 新增子分類", lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1)    # 新增的子分類會接在最後一個子分類後面
+        self.addActionItem(item, "+ 新增子分類", lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1, accentColor=COLOR_SUBCATEGORY)    # 新增的子分類會接在最後一個子分類後面
 
     def addSubCategoryItem(self, parent, sub):
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole + 1, sub.id)
         item.setData(0, TYPE_ROLE, "subcategory")
+        item.setSizeHint(0, QSize(0, ROW_HEIGHT))
         row = TreeRowWidget(sub.name or "未命名子分類", indentLevel=1, accentColor=COLOR_SUBCATEGORY, hasToggle=True)
+        row.setToolTip(sub.name)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("subcategory", sub.id))
         row.toggleClicked.connect(lambda: self.toggleItem(item, row))
         self.tree.setItemWidget(item, 0, row)
 
-        for line in sub.lines:
-            self.addLineItem(item, line, indentLevel=2)
+        for number, line in enumerate(sub.lines, 1):
+            self.addLineItem(item, line, indentLevel=2, number=number)
 
-        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("subcategory", sub.id), indentLevel=2)
+        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("subcategory", sub.id), indentLevel=2, accentColor=COLOR_LINE)
 
-    def addLineItem(self, parent, line, indentLevel):
+    def addLineItem(self, parent, line, indentLevel, number):
         item = QTreeWidgetItem(parent)
         item.setData(0, Qt.UserRole + 1, line.id)
         item.setData(0, TYPE_ROLE, "line")
-        row = TreeRowWidget(makeLineLabel(line.pgn), indentLevel=indentLevel, accentColor=COLOR_LINE)
+        item.setSizeHint(0, QSize(0, ROW_HEIGHT))
+        row = TreeRowWidget(f"Line.{number}", indentLevel=indentLevel, accentColor=COLOR_LINE)
+        row.setToolTip(textwrap.fill(line.pgn, TOOLTIP_WIDTH) if line.pgn.strip() else "（空白 Line）")    # 滑過顯示完整 PGN
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("line", line.id))
         self.tree.setItemWidget(item, 0, row)
 
-    def addActionItem(self, parent, text, onClick, indentLevel):    # 固定的「+ 新增」動作列
+    def addActionItem(self, parent, text, onClick, indentLevel, accentColor):    # 固定的「+ 新增」動作列
         item = QTreeWidgetItem(parent)
         item.setFlags(item.flags() & ~Qt.ItemIsDragEnabled)
-        self.tree.setItemWidget(item, 0, ActionRowButton(text, onClick, indentLevel))
+        item.setSizeHint(0, QSize(0, ROW_HEIGHT))
+        self.tree.setItemWidget(item, 0, ActionRow(text, onClick, indentLevel, accentColor))
 
     def toggleItem(self, item, row):    # 自製展開/折疊，取代 Qt 原生箭頭
         expanded = not item.isExpanded()
