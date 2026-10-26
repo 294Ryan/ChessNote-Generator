@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPlainTex
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from core.pgn_renderer import resolveImageBytes
+from ui.editor_style import INPUT_BG, INPUT_BORDER, INK_SOFT, INPUT_RADIUS
 
 PREVIEW_DEBOUNCE_MS = 300    # 停止輸入多久後才重繪棋盤圖
 PREVIEW_WIDTH = 280    # 預覽圖寬度（像素）
@@ -28,7 +29,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
         self.pgnEdit = QPlainTextEdit(pgn)
         self.pgnEdit.setPlaceholderText("輸入 PGN，例如 1. e4 e5 2. Nf3 Nc6")
-        self.pgnEdit.setMaximumHeight(70)
+        self.pgnEdit.setMaximumHeight(76)
         self.pgnEdit.textChanged.connect(self.onFieldChanged)
         layout.addWidget(self.pgnEdit)
 
@@ -38,7 +39,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.toggleArrow = QToolButton(self)    # 預覽圖收合箭頭，只有可收合且有圖時才出現
         self.toggleArrow.setText("▶")
         self.toggleArrow.setCheckable(True)
-        self.toggleArrow.setStyleSheet("border: none;")
+        self.toggleArrow.setStyleSheet(f"border: none; background: transparent; color: {INK_SOFT};")
         self.toggleArrow.toggled.connect(self.onToggled)
         self.toggleArrow.hide()
         if collapsible:
@@ -60,7 +61,10 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
         self.imageLabel = QLabel()
         self.imageLabel.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.imageLabel)
+        self.imageLabel.setStyleSheet(    # 預覽圖外框，跟輸入框同一套圓角與邊線
+            f"background: {INPUT_BG}; border: 1px solid {INPUT_BORDER}; border-radius: {INPUT_RADIUS}px; padding: 6px;"
+        )
+        layout.addWidget(self.imageLabel, 0, Qt.AlignLeft)    # 靠左，外框貼著圖片大小
 
         self.updateRightButton()
         self.refreshPreview()
@@ -103,6 +107,9 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
     def updateRightButton(self):
         self.rightButton.setText("刪除圖片" if self.isAutoImage() else "使用預設")
+        self.rightButton.setProperty("danger", self.isAutoImage())    # 刪除類按鈕滑過時用紅色
+        self.rightButton.style().unpolish(self.rightButton)
+        self.rightButton.style().polish(self.rightButton)
 
     def setOrientation(self, orientation):    # 開局視角變更時由外部呼叫
         self.orientation = orientation

@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLab
 from PyQt5.QtCore import Qt, QMimeData, QTimer
 from PyQt5.QtGui import QDrag, QCursor
 from core.models import moveItem
+from ui.editor_style import EDITOR_STYLE, CARD_RADIUS, cardStyle
 from ui.line_widget import PgnImageEditor
 
 INDENT_WIDTH = 28    # 每層縮排的像素寬度，呈現 Variant > 子分類 > Line 的從屬關係
@@ -69,10 +70,15 @@ class EditorPanel(QScrollArea):
         self.onModelChanged = onModelChanged    # 欄位變動時通知 MainWindow 更新樹狀標籤
         self.onStructureChanged = onStructureChanged    # 拖曳調序後通知 MainWindow 重建左右兩側
         self.setWidgetResizable(True)
+        self.setStyleSheet(EDITOR_STYLE)
 
         self.container = DragSortContainer(self)
+        self.container.setObjectName("editorContainer")
+        self.container.setAttribute(Qt.WA_StyledBackground, True)    # 自訂 QWidget 預設不畫樣式表背景
         self.layout = QVBoxLayout(self.container)
         self.layout.setAlignment(Qt.AlignTop)
+        self.layout.setContentsMargins(16, 16, 16, 16)
+        self.layout.setSpacing(10)
         self.setWidget(self.container)
 
         self.nodeWidgets = {}    # nodeId -> 區塊 widget，供樹狀導覽跳轉用
@@ -137,7 +143,7 @@ class EditorPanel(QScrollArea):
 
         layout.addWidget(QLabel("開局概述"))
         descEdit = QTextEdit(opening.description)
-        descEdit.setMaximumHeight(60)
+        descEdit.setMaximumHeight(76)
         descEdit.textChanged.connect(lambda: self.updateField(opening, "description", descEdit.toPlainText()))
         layout.addWidget(descEdit)
 
@@ -188,7 +194,7 @@ class EditorPanel(QScrollArea):
     def addDescriptionField(self, layout, obj):    # Variant / SubCategory 共用的選填說明欄位
         descEdit = QTextEdit(obj.description)
         descEdit.setPlaceholderText("說明（選填）")
-        descEdit.setMaximumHeight(50)
+        descEdit.setMaximumHeight(64)
         descEdit.textChanged.connect(lambda: self.updateField(obj, "description", descEdit.toPlainText()))
         layout.addWidget(descEdit)
 
@@ -201,11 +207,12 @@ class EditorPanel(QScrollArea):
 
         bar = QFrame()    # 實體色塊取代 CSS border-left，避免樣式引擎在子元件邊界產生瑕疵線
         bar.setFixedWidth(4)
-        bar.setStyleSheet(f"background: {accentColor};")
+        bar.setStyleSheet(f"background: {accentColor}; border-top-left-radius: {CARD_RADIUS}px; border-bottom-left-radius: {CARD_RADIUS}px;")
         outerLayout.addWidget(bar)
 
         content = QFrame()
-        content.setStyleSheet("QFrame { background: white; }")
+        content.setObjectName("card")
+        content.setStyleSheet(cardStyle(accentColor))
         contentLayout = QVBoxLayout(content)
         contentLayout.setContentsMargins(12, 10, 12, 10)
         contentLayout.setSpacing(6)
