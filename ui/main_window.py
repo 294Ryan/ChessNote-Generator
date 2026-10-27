@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QFileDialog, QMessageBox, QToolButton
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QFileDialog, QToolButton
 from PyQt5.QtCore import Qt, QTimer
 
 from core.models import Opening, moveItem
@@ -9,6 +9,7 @@ from core.exporter_pdf import exportPdf
 from ui.tree_panel import TreePanel
 from ui.editor_panel import EditorPanel
 from ui.theme import setTheme, isDark, windowStyle
+from ui.dialogs import showInfo, showConfirm
 
 
 class MainWindow(QMainWindow):
@@ -100,8 +101,7 @@ class MainWindow(QMainWindow):
 
     ### 刪除節點 ###
     def onDeleteNode(self, nodeType, nodeId):
-        confirm = QMessageBox.question(self, "確認刪除", "確定要刪除此項目嗎？此動作無法復原。")
-        if confirm != QMessageBox.Yes:
+        if not showConfirm(self, "確認刪除", "確定要刪除此項目嗎？此動作無法復原。", "刪除", danger=True):
             return
 
         if nodeType == "variant":
@@ -168,16 +168,16 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(self, "匯出 .docx", "", "Word Files (*.docx)")
         if path:
             exportDocx(self.opening, path)
-            QMessageBox.information(self, "完成", "已匯出 .docx")
+            showInfo(self, "匯出完成", "已匯出 .docx")
 
     def onExportHtml(self):
         path, _ = QFileDialog.getSaveFileName(self, "匯出 .html", "", "HTML Files (*.html)")
         if path:
             exportHtml(self.opening, path)
-            QMessageBox.information(self, "完成", "已匯出 .html")
+            showInfo(self, "匯出完成", "已匯出 .html")
 
     def onExportPdf(self):
         path, _ = QFileDialog.getSaveFileName(self, "匯出 .pdf", "", "PDF Files (*.pdf)")
         if path:
             exportPdf(self.opening, path)
-            QMessageBox.information(self, "完成", "已匯出 .pdf")
+            showInfo(self, "匯出完成", "已匯出 .pdf")
