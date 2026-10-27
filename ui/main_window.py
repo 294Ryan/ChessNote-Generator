@@ -5,6 +5,7 @@ from core.models import Opening, moveItem
 from core.project_io import saveProject, loadProject
 from core.exporter_docx import exportDocx
 from core.exporter_html import exportHtml
+from core.exporter_pdf import exportPdf
 from ui.tree_panel import TreePanel
 from ui.editor_panel import EditorPanel
 from ui.theme import setTheme, isDark, windowStyle
@@ -41,6 +42,7 @@ class MainWindow(QMainWindow):
         exportMenu = self.menuBar().addMenu("匯出")
         exportMenu.addAction("匯出 .docx", self.onExportDocx)
         exportMenu.addAction("匯出 .html", self.onExportHtml)
+        exportMenu.addAction("匯出 .pdf", self.onExportPdf)
 
         self.themeButton = QToolButton()    # 選單列右側的主題切換鈕
         self.themeButton.setObjectName("themeToggle")
@@ -173,3 +175,9 @@ class MainWindow(QMainWindow):
         if path:
             exportHtml(self.opening, path)
             QMessageBox.information(self, "完成", "已匯出 .html")
+
+    def onExportPdf(self):
+        path, _ = QFileDialog.getSaveFileName(self, "匯出 .pdf", "", "PDF Files (*.pdf)")
+        if path:
+            exportPdf(self.opening, path)
+            QMessageBox.information(self, "完成", "已匯出 .pdf")
