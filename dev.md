@@ -23,13 +23,15 @@
 **外觀**
 - 🟡 編輯區紙質感樣式（卡片圓角、輸入框聚焦用卡片主色、細捲軸、自繪單選框），集中於 `ui/editor_style.py` — **已完成**
 - 🟡 選單列美化（底色、圓角項目、細邊線）與 **淺色 / 深色主題切換**（選單列右側按鈕，套用選單列 + 左側樹 + 編輯區；不記住選擇，每次啟動為淺色），色票集中於 `ui/theme.py` — **已完成**
+- 🟡 自繪提示框 `ui/dialogs.py`（`showInfo` / `showConfirm`）：圖示、半透明遮罩、無動畫，色票取自 theme — **已完成**
+- 🟡 自備字型 `assets/fonts/NotoSansTC-Regular.ttf`，僅影響編輯器顯示（UI 與使用者輸入），不影響匯出；PGN 輸入框維持等寬字型 — **已完成**
 
 **匯出**
 - 🔴 `.html`：米白紙感、襯線字體、酒紅強調色；起始局面標題與 Variant 同格式；Line 卡片可折疊，**摺疊列直接顯示 PGN**（淡色底標記、字稍大，過長以 `...more` 截斷），展開後顯示完整 PGN 與圖片；無圖片的 Line 仍可展開（不留白佔位）；響應式與列印樣式 — **已完成**
 - 🔴 `.docx`：黑白報告風格、棋盤圖近全寬、Line 僅輸出 PGN（12pt，前後以不換行空白墊底）與圖片、標題層級 26 / 20 / 16pt（使用者已自行微調）— **已完成**
-- 🟢 匯出 PDF — 未開始
-- 🟢 打包成單一 `.exe`（PyInstaller）— 未開始（README 已附指令範例）
-- 🟢 `assets/icon.ico` — 尚未提供實際圖示
+- 🟡 `.pdf`：`core/exporter_pdf.py`，以 `QTextDocument` + `QPrinter` 輸出（不增加依賴、exe 不變大）；A4、邊距 5mm、Line 全展開、PGN 底色標記 + 圖片（棋盤圖統一寬度）— **已完成**
+- 🟢 打包成單一 `.exe`（PyInstaller）— 指令已定，見「打包」；目標 Win10 以上
+- 🟢 app 圖示 `assets/fonts/icons/app_icon.ico` — **已提供**
 
 ---
 
@@ -41,12 +43,13 @@
 - **docx 生成**：`python-docx`
 - **HTML 生成**：Jinja2
 - **存檔格式**：JSON
-- **打包工具**：PyInstaller（尚未實作）
+- **打包工具**：PyInstaller（單檔）
 - **路徑處理**：動態路徑（`sys._MEIPASS` / `__file__`），`main.py` 動態解析 PyQt5 外掛路徑，修正中文使用者路徑下的 Qt 平台外掛載入失敗問題
 
 **目前程式結構**
-- `core/`：`models.py`（資料模型、`moveItem` 調序）、`pgn_renderer.py`、`project_io.py`、`exporter_docx.py`、`exporter_html.py`
-- `ui/`：`main_window.py`（主視窗、選單、主題切換、樹調序）、`tree_panel.py`（左側樹）、`editor_panel.py`（編輯區 + 拖曳）、`line_widget.py`（PGN + 圖片編輯器）、`editor_style.py`、`theme.py`
+- `core/`：`models.py`（資料模型、`moveItem` 調序）、`pgn_renderer.py`、`project_io.py`、`exporter_docx.py`、`exporter_html.py`、`exporter_pdf.py`
+- `ui/`：`main_window.py`（主視窗、選單、主題切換、樹調序）、`tree_panel.py`（左側樹）、`editor_panel.py`（編輯區 + 拖曳）、`line_widget.py`（PGN + 圖片編輯器）、`editor_style.py`、`theme.py`、`dialogs.py`
+- `assets/fonts/`：自備字型與 `icons/app_icon.ico`
 - `templates/`：`opening_note.html.j2`、`_line_card.html.j2`
 
 ---
@@ -76,26 +79,27 @@
 - 拖曳只能在同父層同類型內調序，不支援跨父層搬移
 - 棋盤視角只影響自動生成圖，不影響手動上傳圖；匯出檔不隨編輯器主題變化
 - html 摺疊列的 `...more` 由 Python 端以 `PGN_PREVIEW_LENGTH` 截斷；視窗過窄時瀏覽器會改用預設的 `…`
-- 主題不記憶；檔案對話框、訊息視窗維持系統預設外觀
+- 主題不記憶；檔案對話框維持系統預設外觀（提示框為自繪）
 - 下拉選單未做圓角（Qt popup 圓角在 Windows 易出黑角）
 - **新版存檔無法被舊版程式讀取**（舊版讀 Line 時找不到 `name`）；舊檔用新版開啟再存檔後，Line 的名稱與說明會永久消失
+- PDF 為 Qt 精簡版 HTML 渲染：無米白頁底色、無圓角／折疊；無法保證 Line 區塊不被跨頁切開；字型為 Georgia + 系統 fallback。不滿意再升級 `PyQtWebEngine`（約 +100MB）
 - 說明欄位維持單一通用欄位，不拆分「說明 / 優點 / 缺點」
+- 不做 Settings／About 頁面；不附 Bold 字型（粗體由 Qt 模擬，不滿意再補 `NotoSansTC-Bold.ttf`）
 - 不支援線上同步
 - 開發環境（沙盒）無 PyQt5 / python-chess：多數 UI 行為只以模擬元件驗證邏輯，視覺與手感需實機確認
 
 ---
 
-### 待確認事項
+### 打包
 
-- **實機驗證**（尚未在有顯示器的環境完整跑過）：
-  - 編輯區與左側樹的拖曳手感、插入線位置、自動捲動速度，以及左側樹游標是否仍顯示禁止符號
-  - 左側樹「+」列展開時，內容位移是否造成閃動（可調 `ACTION_ROW_HEIGHT`）
-  - 黑方視角生成的棋盤是否朝向正確
-  - 深色主題下 Variant 藍 / 子分類綠 / Line 棕的對比是否足夠，是否需要另一組較亮的主色
-  - 圖片按鈕列排版、預覽圖外框、選單列整體觀感
-- HTML 列印樣式（`@media print`）尚未實機測試瀏覽器 Ctrl+P / 另存 PDF
-- 匯出 PDF 的優先級
-- `.exe` 打包測試環境（是否需支援 Win10 以下）
-- `assets/icon.ico` 尚未提供
-- 主題選擇是否需要記住（目前刻意不做，有需求再擴充）
-- README 與 `requirements.txt` 尚未依本輪變更複查（例如 Line 欄位說明、新增的視角與圖片按鈕）
+```
+pyinstaller --noconfirm --clean --onefile --windowed --name ChessNoteGenerator --icon "assets\fonts\icons\app_icon.ico" --add-data "templates;templates" --add-data "assets/fonts/NotoSansTC-Regular.ttf;assets/fonts" --collect-data docx main.py
+```
+
+輸出：`dist\ChessNoteGenerator.exe`
+
+---
+
+### 待辦
+
+- README 與 `requirements.txt` 尚未依近期變更複查（Line 欄位說明、視角與圖片按鈕、PDF 匯出、打包指令）
