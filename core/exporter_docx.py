@@ -4,6 +4,7 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from core.pgn_renderer import resolveImageBytes
+from core.i18n import t
 
 BODY_FONT = "Cambria"    # 襯線字體，呼應 html 版的出版品質感（僅影響英數字元）
 BODY_FONT_CJK = "PMingLiU"    # 新細明體，中文字元搭配用，襯線風格與 Cambria 呼應
@@ -113,11 +114,11 @@ def exportDocx(opening, outputPath):
     setupStyles(doc)
 
     doc.add_heading(opening.name, level=1)
-    doc.add_paragraph(f"Perspective: {opening.orientation.capitalize()}")
+    doc.add_paragraph(f"{t('perspective')}: {t(opening.orientation)}")
     if opening.description:
         doc.add_paragraph(opening.description)
 
-    doc.add_heading("基本局面", level=2)
+    doc.add_heading(t("basePosition"), level=2)
     addPgnParagraph(doc, opening.startingPgn)
     addImageIfExists(doc, opening.startingPgn, opening.startingImagePath, opening.orientation, opening.startingNoImage)
 

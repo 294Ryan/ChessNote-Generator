@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="{{ opening.lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -174,8 +174,8 @@
         color: var(--color-ink-faint);
         white-space: nowrap;
     }
-    .line-toggle::after { content: "展開 ▾"; }
-    .line-card[open] .line-toggle::after { content: "收合 ▴"; }
+    .line-toggle::after { content: "{{ opening.expand }}"; }
+    .line-card[open] .line-toggle::after { content: "{{ opening.collapse }}"; }
 
     .line-pgn {    /* 摺疊列本身就是 PGN：收合時單行截斷，展開後完整換行 */
         flex: 1;
@@ -234,18 +234,18 @@
 <div class="page">
 
     <header class="masthead">
-        <p class="eyebrow">Chess Opening Study</p>
+        <p class="eyebrow">{{ opening.eyebrow }}</p>
         <h1 class="opening-title">{{ opening.name }}</h1>
-        <p class="opening-orient">Perspective: {{ opening.orientation }}</p>
+        <p class="opening-orient">{{ opening.perspective }}: {{ opening.orientation }}</p>
         {% if opening.description %}<p class="opening-desc">{{ opening.description }}</p>{% endif %}
     </header>
 
     <section class="starting-section">
-        <h2 class="variant-title">起始局面</h2>
+        <h2 class="variant-title">{{ opening.startingPosition }}</h2>
         <div class="pgn-block">{{ opening.startingPgn }}</div>
         {% if opening.startingImage %}
         <figure class="board-figure">
-            <img src="{{ opening.startingImage }}" alt="起始局面棋盤圖">
+            <img src="{{ opening.startingImage }}" alt="{{ opening.altStarting }}">
         </figure>
         {% endif %}
     </section>

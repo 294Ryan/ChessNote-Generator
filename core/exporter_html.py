@@ -2,6 +2,7 @@ import os
 import base64
 from jinja2 import Environment, FileSystemLoader
 from core.pgn_renderer import resolveImageBytes
+from core.i18n import t, getLanguage
 
 def buildImageDataUri(pgn, imagePath, orientation, noImage):
     rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage)
@@ -22,7 +23,15 @@ def buildContext(opening):
     context = {
         "name": opening.name,
         "description": opening.description,
-        "orientation": opening.orientation.capitalize(),
+        "orientation": t(opening.orientation),
+        "lang": getLanguage(),
+        "perspective": t("perspective"),
+        "eyebrow": t("eyebrow"),
+        "startingPosition": t("startingPosition"),
+        "expand": t("expand"),
+        "collapse": t("collapse"),
+        "altStarting": t("altStarting"),
+        "altLine": t("altLine"),
         "startingPgn": opening.startingPgn,
         "startingImage": buildImageDataUri(opening.startingPgn, opening.startingImagePath, opening.orientation, opening.startingNoImage),
         "variants": [],

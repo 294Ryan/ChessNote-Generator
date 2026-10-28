@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt, QPointF, QRectF
 from PyQt5.QtGui import QPainter, QColor, QPen, QPolygonF
 from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
 from ui import theme
+from core.i18n import t
 
 ACCENT = "#7a2e2e"
 DANGER_FILL = "#b91c1c"
@@ -82,7 +83,7 @@ class CustomDialog(QDialog):
         buttonLayout.setSpacing(8)
         buttonLayout.addStretch()
         if showCancel:
-            cancelButton = QPushButton("取消")
+            cancelButton = QPushButton(t("cancel"))
             cancelButton.setStyleSheet(self.buttonStyle("transparent", p.ink, p.inputBorder, p.hoverBg))
             cancelButton.clicked.connect(self.reject)
             buttonLayout.addWidget(cancelButton)
@@ -131,8 +132,8 @@ def runDialog(parent, title, message, kind, confirmText, showCancel, danger):
 
 
 def showInfo(parent, title, message):
-    runDialog(parent, title, message, "check", "確定", False, False)
+    runDialog(parent, title, message, "check", t("ok"), False, False)
 
 
-def showConfirm(parent, title, message, confirmText="確定", danger=False):    # 回傳 True 表示按下確認
-    return runDialog(parent, title, message, "warn", confirmText, True, danger)
+def showConfirm(parent, title, message, confirmText=None, danger=False):    # 回傳 True 表示按下確認
+    return runDialog(parent, title, message, "warn", confirmText or t("ok"), True, danger)

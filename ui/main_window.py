@@ -1,7 +1,8 @@
-from PyQt5.QtWidgets import QMainWindow, QSplitter, QFileDialog, QToolButton
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QFileDialog, QToolButton, QActionGroup
 from PyQt5.QtCore import Qt, QTimer
 
 from core.models import Opening, moveItem
+from core.i18n import t, setLanguage, getLanguage, LANGUAGES
 from core.project_io import saveProject, loadProject
 from core.exporter_docx import exportDocx
 from core.exporter_html import exportHtml
@@ -36,14 +37,25 @@ class MainWindow(QMainWindow):
         self.refreshUI()
 
     def buildMenu(self):
-        fileMenu = self.menuBar().addMenu("檔案")
-        fileMenu.addAction("開啟專案", self.onOpenProject)
-        fileMenu.addAction("儲存專案", self.onSaveProject)
+        self.fileMenu = self.menuBar().addMenu("")    # 文字由 retranslateMenu 依語言設定
+        self.openAction = self.fileMenu.addAction("", self.onOpenProject)
+        self.saveAction = self.fileMenu.addAction("", self.onSaveProject)
 
-        exportMenu = self.menuBar().addMenu("匯出")
-        exportMenu.addAction("匯出 .docx", self.onExportDocx)
-        exportMenu.addAction("匯出 .html", self.onExportHtml)
-        exportMenu.addAction("匯出 .pdf", self.onExportPdf)
+        self.exportMenu = self.menuBar().addMenu("")
+        self.exportActions = {}
+        for ext, handler in (("docx", self.onExportDocx), ("html", self.onExportHtml), ("pdf", self.onExportPdf)):
+            self.exportActions[ext] = self.exportMenu.addAction("", handler)
+
+        self.languageMenu = self.menuBar().addMenu("")
+        self.languageActions = {}
+        languageGroup = QActionGroup(self)    # 互斥，選單內只會有一個打勾
+        for code, name in LANGUAGES:
+            action = self.languageMenu.addAction(name)    # 語言名稱一律用該語言自己的寫法
+            action.setCheckable(True)
+            action.setActionGroup(languageGroup)
+            action.triggered.connect(lambda checked, c=code: self.onLanguageSelected(c))
+            self.languageActions[code] = action
+        self.retranslateMenu()
 
         self.themeButton = QToolButton()    # 選單列右側的主題切換鈕
         self.themeButton.setObjectName("themeToggle")
@@ -51,13 +63,34 @@ class MainWindow(QMainWindow):
         self.themeButton.clicked.connect(self.onToggleTheme)
         self.menuBar().setCornerWidget(self.themeButton, Qt.TopRightCorner)
 
+    ### 語言 ###
+    def retranslateMenu(self):
+        self.fileMenu.setTitle(t("menuFile"))
+        self.openAction.setText(t("menuOpenProject"))
+        self.saveAction.setText(t("menuSaveProject"))
+        self.exportMenu.setTitle(t("menuExport"))
+        for ext, action in self.exportActions.items():
+            action.setText(t("exportAs", ext=ext))
+        title = t("menuLanguage")
+        self.languageMenu.setTitle(title if getLanguage() == "en" else f"{title} / Language")    # 附英文，方便看不懂當前語言的人找到
+        self.languageActions[getLanguage()].setChecked(True)
+
+    def onLanguageSelected(self, code):
+        setLanguage(code)
+        self.retranslateMenu()
+        self.applyTheme()    # 主題鈕文字也要換語言
+        scrollBar = self.editorPanel.verticalScrollBar()
+        scrollValue = scrollBar.value()
+        self.refreshUI()    # 重建兩側，標籤與提示文字才會換語言
+        QTimer.singleShot(0, lambda: scrollBar.setValue(scrollValue))
+
     ### 主題 ###
     def applyTheme(self):
         self.setStyleSheet(windowStyle())
         self.treePanel.applyTheme()
         self.editorPanel.applyTheme()
-        self.themeButton.setText("☀  淺色" if isDark() else "☾  深色")    # 顯示點擊後會切換成的主題
-        self.themeButton.setToolTip("切換為淺色主題" if isDark() else "切換為深色主題")
+        self.themeButton.setText(t("themeLight") if isDark() else t("themeDark"))    # 顯示點擊後會切換成的主題
+        self.themeButton.setToolTip(t("themeToLight") if isDark() else t("themeToDark"))
 
     def onToggleTheme(self):
         setTheme("light" if isDark() else "dark")
@@ -101,7 +134,7 @@ class MainWindow(QMainWindow):
 
     ### 刪除節點 ###
     def onDeleteNode(self, nodeType, nodeId):
-        if not showConfirm(self, "確認刪除", "確定要刪除此項目嗎？此動作無法復原。", "刪除", danger=True):
+        if not showConfirm(self, t("deleteTitle"), t("deleteMessage"), t("deleteConfirm"), danger=True):
             return
 
         if nodeType == "variant":
@@ -151,13 +184,13 @@ class MainWindow(QMainWindow):
 
     ### 存檔 / 載入 ###
     def onSaveProject(self):
-        path, _ = QFileDialog.getSaveFileName(self, "儲存專案", "", "JSON Files (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, t("menuSaveProject"), "", "JSON Files (*.json)")
         if path:
             saveProject(self.opening, path)
             self.currentProjectPath = path
 
     def onOpenProject(self):
-        path, _ = QFileDialog.getOpenFileName(self, "開啟專案", "", "JSON Files (*.json)")
+        path, _ = QFileDialog.getOpenFileName(self, t("menuOpenProject"), "", "JSON Files (*.json)")
         if path:
             self.opening = loadProject(path)
             self.currentProjectPath = path
@@ -165,19 +198,19 @@ class MainWindow(QMainWindow):
 
     ### 匯出 ###
     def onExportDocx(self):
-        path, _ = QFileDialog.getSaveFileName(self, "匯出 .docx", "", "Word Files (*.docx)")
+        path, _ = QFileDialog.getSaveFileName(self, t("exportAs", ext="docx"), "", "Word Files (*.docx)")
         if path:
             exportDocx(self.opening, path)
-            showInfo(self, "匯出完成", "已匯出 .docx")
+            showInfo(self, t("exportDone"), t("exportDoneMsg", ext="docx"))
 
     def onExportHtml(self):
-        path, _ = QFileDialog.getSaveFileName(self, "匯出 .html", "", "HTML Files (*.html)")
+        path, _ = QFileDialog.getSaveFileName(self, t("exportAs", ext="html"), "", "HTML Files (*.html)")
         if path:
             exportHtml(self.opening, path)
-            showInfo(self, "匯出完成", "已匯出 .html")
+            showInfo(self, t("exportDone"), t("exportDoneMsg", ext="html"))
 
     def onExportPdf(self):
-        path, _ = QFileDialog.getSaveFileName(self, "匯出 .pdf", "", "PDF Files (*.pdf)")
+        path, _ = QFileDialog.getSaveFileName(self, t("exportAs", ext="pdf"), "", "PDF Files (*.pdf)")
         if path:
             exportPdf(self.opening, path)
-            showInfo(self, "匯出完成", "已匯出 .pdf")
+            showInfo(self, t("exportDone"), t("exportDoneMsg", ext="pdf"))

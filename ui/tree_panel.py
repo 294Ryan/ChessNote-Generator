@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, 
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QSize
 import textwrap
 from ui.theme import palette, scrollbarStyle
+from core.i18n import t
 
 TYPE_ROLE = Qt.UserRole + 2    # item 資料：節點類型 variant / subcategory / line（節點 id 在 Qt.UserRole + 1）
 INDENT_WIDTH = 18    # 每層縮排的像素寬度，需與 editor_panel 的視覺比例一致（樹狀面板較窄，用較小值）
@@ -236,14 +237,14 @@ class TreePanel(QWidget):
         rootItem.setData(0, Qt.UserRole + 1, "opening")
         rootItem.setFlags(rootItem.flags() & ~Qt.ItemIsDragEnabled)
         rootItem.setSizeHint(0, QSize(0, ROW_HEIGHT))
-        rootRow = TreeRowWidget("開局基本資訊", indentLevel=0, accentColor=COLOR_OPENING, showDelete=False, scopeIds=() if opening.variants else ("tail",))
+        rootRow = TreeRowWidget(t("openingInfo"), indentLevel=0, accentColor=COLOR_OPENING, showDelete=False, scopeIds=() if opening.variants else ("tail",))
         rootRow.hovered.connect(self.onRowHovered)
         self.tree.setItemWidget(rootItem, 0, rootRow)
 
         for index, variant in enumerate(opening.variants):
             self.addVariantItem(self.tree, variant, isLast=(index == len(opening.variants) - 1))
 
-        self.addActionItem(self.tree, "+ 新增 Variant", self.addVariantRequested.emit, indentLevel=0, accentColor=COLOR_VARIANT, ownerId="tail", scopeIds=("tail",))    # 滑到最後一個 Variant 區塊或本列時顯示
+        self.addActionItem(self.tree, t("treeAddVariant"), self.addVariantRequested.emit, indentLevel=0, accentColor=COLOR_VARIANT, ownerId="tail", scopeIds=("tail",))    # 滑到最後一個 Variant 區塊或本列時顯示
         self.tree.expandAll()
         self.applyActiveScopes()
 
@@ -253,7 +254,7 @@ class TreePanel(QWidget):
         item.setData(0, Qt.UserRole + 1, variant.id)
         item.setData(0, TYPE_ROLE, "variant")
         item.setSizeHint(0, QSize(0, ROW_HEIGHT))
-        row = TreeRowWidget(variant.name or "未命名 Variant", indentLevel=0, accentColor=COLOR_VARIANT, hasToggle=True, scopeIds=scope)
+        row = TreeRowWidget(variant.name or t("treeUnnamedVariant"), indentLevel=0, accentColor=COLOR_VARIANT, hasToggle=True, scopeIds=scope)
         row.hovered.connect(self.onRowHovered)
         row.setToolTip(variant.name)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("variant", variant.id))
@@ -262,10 +263,10 @@ class TreePanel(QWidget):
 
         for number, line in enumerate(variant.lines, 1):    # Line 排在子分類之前
             self.addLineItem(item, line, indentLevel=1, number=number, scope=scope)
-        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1, accentColor=COLOR_LINE, ownerId=variant.id, scopeIds=scope, excludeIds=[sub.id for sub in variant.subCategories])    # 在子分類內時隱藏，因為它位於子分類上方    # 新增的 Line 會接在最後一條 Line 後面
+        self.addActionItem(item, t("treeAddLine"), lambda: self.addLineRequested.emit("variant", variant.id), indentLevel=1, accentColor=COLOR_LINE, ownerId=variant.id, scopeIds=scope, excludeIds=[sub.id for sub in variant.subCategories])    # 在子分類內時隱藏，因為它位於子分類上方    # 新增的 Line 會接在最後一條 Line 後面
         for sub in variant.subCategories:
             self.addSubCategoryItem(item, sub, scope)
-        self.addActionItem(item, "+ 新增子分類", lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1, accentColor=COLOR_SUBCATEGORY, ownerId=variant.id, scopeIds=scope)    # 新增的子分類會接在最後一個子分類後面
+        self.addActionItem(item, t("treeAddSub"), lambda: self.addSubCategoryRequested.emit(variant.id), indentLevel=1, accentColor=COLOR_SUBCATEGORY, ownerId=variant.id, scopeIds=scope)    # 新增的子分類會接在最後一個子分類後面
 
     def addSubCategoryItem(self, parent, sub, parentScope):
         scope = parentScope + (sub.id,)
@@ -273,7 +274,7 @@ class TreePanel(QWidget):
         item.setData(0, Qt.UserRole + 1, sub.id)
         item.setData(0, TYPE_ROLE, "subcategory")
         item.setSizeHint(0, QSize(0, ROW_HEIGHT))
-        row = TreeRowWidget(sub.name or "未命名子分類", indentLevel=1, accentColor=COLOR_SUBCATEGORY, hasToggle=True, scopeIds=scope)
+        row = TreeRowWidget(sub.name or t("treeUnnamedSub"), indentLevel=1, accentColor=COLOR_SUBCATEGORY, hasToggle=True, scopeIds=scope)
         row.hovered.connect(self.onRowHovered)
         row.setToolTip(sub.name)
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("subcategory", sub.id))
@@ -283,7 +284,7 @@ class TreePanel(QWidget):
         for number, line in enumerate(sub.lines, 1):
             self.addLineItem(item, line, indentLevel=2, number=number, scope=scope)
 
-        self.addActionItem(item, "+ 新增 Line", lambda: self.addLineRequested.emit("subcategory", sub.id), indentLevel=2, accentColor=COLOR_LINE, ownerId=sub.id, scopeIds=scope)
+        self.addActionItem(item, t("treeAddLine"), lambda: self.addLineRequested.emit("subcategory", sub.id), indentLevel=2, accentColor=COLOR_LINE, ownerId=sub.id, scopeIds=scope)
 
     def addLineItem(self, parent, line, indentLevel, number, scope):
         item = QTreeWidgetItem(parent)
@@ -292,7 +293,7 @@ class TreePanel(QWidget):
         item.setSizeHint(0, QSize(0, ROW_HEIGHT))
         row = TreeRowWidget(f"Line.{number}", indentLevel=indentLevel, accentColor=COLOR_LINE, scopeIds=scope)
         row.hovered.connect(self.onRowHovered)
-        row.setToolTip(textwrap.fill(line.pgn, TOOLTIP_WIDTH) if line.pgn.strip() else "（空白 Line）")    # 滑過顯示完整 PGN
+        row.setToolTip(textwrap.fill(line.pgn, TOOLTIP_WIDTH) if line.pgn.strip() else t("treeEmptyLine"))    # 滑過顯示完整 PGN
         row.deleteClicked.connect(lambda: self.deleteRequested.emit("line", line.id))
         self.tree.setItemWidget(item, 0, row)
 

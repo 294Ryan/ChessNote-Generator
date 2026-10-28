@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLab
 from PyQt5.QtCore import Qt, QMimeData, QTimer
 from PyQt5.QtGui import QDrag, QCursor
 from core.models import moveItem
+from core.i18n import t
 from ui.editor_style import editorStyle, CARD_RADIUS, cardStyle
 from ui.line_widget import PgnImageEditor
 
@@ -23,7 +24,7 @@ class DragHandle(QLabel):    # 區塊右上角的 ☰ 握把，按住拖曳調�
         self.nodeId = nodeId
         self.frame = frame    # 拖曳時拿來截圖當作游標跟隨的縮圖
         self.pressPos = None
-        self.setToolTip("拖曳調整順序")
+        self.setToolTip(t("dragTip"))
         self.setCursor(Qt.SizeAllCursor)
         self.setStyleSheet("background: transparent; color: #9ca3af; font-size: 14px; padding: 0 4px;")
 
@@ -125,17 +126,17 @@ class EditorPanel(QScrollArea):
     def addOpeningSection(self, opening):
         frame = self.makeFrame(indentLevel=0, accentColor=COLOR_OPENING)
         layout = frame.contentLayout
-        layout.addWidget(self.makeHeading("開局基本資訊", COLOR_OPENING))
+        layout.addWidget(self.makeHeading(t("openingInfo"), COLOR_OPENING))
 
-        layout.addWidget(QLabel("開局名稱"))
+        layout.addWidget(QLabel(t("openingName")))
         nameEdit = QLineEdit(opening.name)
         nameEdit.textChanged.connect(lambda text: self.updateField(opening, "name", text))
         layout.addWidget(nameEdit)
 
         orientationRow = QHBoxLayout()    # 棋盤視角:  • White  ◦ Black
-        orientationRow.addWidget(QLabel("棋盤視角:"))
-        whiteRadio = QRadioButton("White")
-        blackRadio = QRadioButton("Black")
+        orientationRow.addWidget(QLabel(t("orientationLabel")))
+        whiteRadio = QRadioButton(t("white"))
+        blackRadio = QRadioButton(t("black"))
         whiteRadio.setChecked(opening.orientation == "white")
         blackRadio.setChecked(opening.orientation == "black")
         whiteRadio.toggled.connect(lambda checked: self.onOrientationChanged(opening, "white" if checked else "black"))
@@ -144,13 +145,13 @@ class EditorPanel(QScrollArea):
         orientationRow.addStretch()
         layout.addLayout(orientationRow)
 
-        layout.addWidget(QLabel("開局概述"))
+        layout.addWidget(QLabel(t("openingDesc")))
         descEdit = QTextEdit(opening.description)
         descEdit.setMaximumHeight(76)
         descEdit.textChanged.connect(lambda: self.updateField(opening, "description", descEdit.toPlainText()))
         layout.addWidget(descEdit)
 
-        layout.addWidget(QLabel("起始 PGN"))
+        layout.addWidget(QLabel(t("startingPgn")))
         pgnEditor = PgnImageEditor(opening.startingPgn, opening.startingImagePath, opening.startingNoImage, opening.orientation, collapsible=False)
         pgnEditor.changed.connect(lambda: self.updateStartingPgn(opening, pgnEditor))
         self.imageEditors.append(pgnEditor)
@@ -173,7 +174,7 @@ class EditorPanel(QScrollArea):
     def addSubCategorySection(self, sub, siblings, ancestorIds):
         frame = self.makeFrame(indentLevel=1, accentColor=COLOR_SUBCATEGORY)
         layout = frame.contentLayout
-        layout.addWidget(self.makeHeading("子分類", COLOR_SUBCATEGORY, DragHandle(sub.id, frame)))
+        layout.addWidget(self.makeHeading(t("subcategory"), COLOR_SUBCATEGORY, DragHandle(sub.id, frame)))
 
         nameEdit = QLineEdit(sub.name)
         nameEdit.textChanged.connect(lambda text: self.updateField(sub, "name", text))
@@ -196,7 +197,7 @@ class EditorPanel(QScrollArea):
 
     def addDescriptionField(self, layout, obj):    # Variant / SubCategory 共用的選填說明欄位
         descEdit = QTextEdit(obj.description)
-        descEdit.setPlaceholderText("說明（選填）")
+        descEdit.setPlaceholderText(t("descPlaceholder"))
         descEdit.setMaximumHeight(64)
         descEdit.textChanged.connect(lambda: self.updateField(obj, "description", descEdit.toPlainText()))
         layout.addWidget(descEdit)

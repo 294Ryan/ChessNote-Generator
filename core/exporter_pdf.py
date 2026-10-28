@@ -4,6 +4,7 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QTextDocument, QImage, QFont
 from PyQt5.QtPrintSupport import QPrinter
 from core.pgn_renderer import resolveImageBytes
+from core.i18n import t
 
 IMAGE_WIDTH = 360    # 單位 px，Qt 會依列印解析度換算；所有棋盤圖統一大小
 PGN_BG = "#f7eee6"
@@ -58,9 +59,9 @@ def buildHtml(doc, opening):
     parts = [
         '<body style="color:#2a2520;">',
         f'<h1 style="font-size:24pt;">{html.escape(opening.name)}</h1>',
-        f'<p style="color:{SOFT};">Perspective: {orientation.capitalize()}</p>',
+        f'<p style="color:{SOFT};">{t('perspective')}: {t(orientation)}</p>',
         buildDescription(opening.description),
-        '<h2 style="font-size:18pt;">起始局面</h2>',
+        '<h2 style="font-size:18pt;">{t("startingPosition")}</h2>',
         buildPgnBlock(opening.startingPgn),
         buildImageTag(doc, opening.startingPgn, opening.startingImagePath, orientation, opening.startingNoImage, IMAGE_WIDTH),
     ]

@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from core.pgn_renderer import resolveImageBytes
 from ui.editor_style import INPUT_RADIUS
 from ui.theme import palette
+from core.i18n import t
 
 PREVIEW_DEBOUNCE_MS = 300    # 停止輸入多久後才重繪棋盤圖
 PREVIEW_WIDTH = 280    # 預覽圖寬度（像素）
@@ -30,7 +31,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.previewTimer.timeout.connect(self.refreshPreview)
 
         self.pgnEdit = QPlainTextEdit(pgn)
-        self.pgnEdit.setPlaceholderText("輸入 PGN，例如 1. e4 e5 2. Nf3 Nc6")
+        self.pgnEdit.setPlaceholderText(t("pgnPlaceholder"))
         self.pgnEdit.setMaximumHeight(76)
         self.pgnEdit.textChanged.connect(self.onFieldChanged)
         layout.addWidget(self.pgnEdit)
@@ -50,7 +51,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
             self.toggleArrow.setSizePolicy(sizePolicy)
             buttonRow.addWidget(self.toggleArrow)
 
-        uploadButton = QPushButton("上傳圖片")
+        uploadButton = QPushButton(t("uploadImage"))
         uploadButton.clicked.connect(self.onUploadImage)
         buttonRow.addWidget(uploadButton)
 
@@ -93,7 +94,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.applyImageState(expand=True)
 
     def onUploadImage(self):
-        path, _ = QFileDialog.getOpenFileName(self, "選擇圖片", "", "Images (*.png *.jpg *.jpeg)")
+        path, _ = QFileDialog.getOpenFileName(self, t("pickImage"), "", "Images (*.png *.jpg *.jpeg)")
         if path:
             self.imagePath = path
             self.noImage = False
@@ -108,7 +109,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
             self.setAutoImage()
 
     def updateRightButton(self):
-        self.rightButton.setText("刪除圖片" if self.isAutoImage() else "使用預設")
+        self.rightButton.setText(t("deleteImage") if self.isAutoImage() else t("useDefault"))
         self.rightButton.setProperty("danger", self.isAutoImage())    # 刪除類按鈕滑過時用紅色
         self.rightButton.style().unpolish(self.rightButton)
         self.rightButton.style().polish(self.rightButton)
