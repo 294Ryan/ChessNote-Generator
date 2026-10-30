@@ -1,10 +1,12 @@
 import io
+import re
 import chess
 import chess.pgn
 import chess.svg
 from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import QByteArray, QBuffer, QIODevice
+from core.i18n import t
 
 def renderPgnToPng(pgn, boardSize=400, orientation="white"):
     game = chess.pgn.read_game(io.StringIO(pgn))
@@ -28,6 +30,24 @@ def renderPgnToPng(pgn, boardSize=400, orientation="white"):
     buffer.open(QIODevice.WriteOnly)
     image.save(buffer, "PNG")
     return bytes(buffer.data())
+
+
+def checkPgn(pgn):    # PGN 有誤回傳說明文字（已依目前語言翻譯）；空白或沒問題回傳 None
+    if not pgn.strip():
+        return None
+    game = chess.pgn.read_game(io.StringIO(pgn))
+    errors = getattr(game, "errors", []) if game else []
+    if not errors:
+        return None
+
+    board = game.board()
+    for move in game.mainline_moves():
+        board.push(move)    # 走到出錯之前的最後一個合法局面，用來推算出錯的是第幾手、輪到誰
+    side = t("sideWhite") if board.turn == chess.WHITE else t("sideBlack")
+    match = re.search(r"'([^']+)'", str(errors[0]))    # python-chess 的錯誤訊息會用單引號框住有問題的著法
+    if match:
+        return t("pgnErrorMove", n=board.fullmove_number, side=side, move=match.group(1))
+    return t("pgnErrorPlain", n=board.fullmove_number, side=side)
 
 
 def savePngToFile(pngBytes, filePath):

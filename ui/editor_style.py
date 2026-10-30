@@ -41,6 +41,7 @@ def cardStyle(accent):    # 卡片內容區的樣式，accent 為該卡片主色
     selection-color: {p.ink};
 }}
 #card QPlainTextEdit {{ font-family: {MONO_FONT}; }}
+#card QPlainTextEdit[invalid="true"], #card QPlainTextEdit[invalid="true"]:focus {{ border: 1px solid {p.danger}; }}
 #card QLineEdit:focus, #card QTextEdit:focus, #card QPlainTextEdit:focus {{
     background: {p.cardBg};
     border: 1px solid {accent};

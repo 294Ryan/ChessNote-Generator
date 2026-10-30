@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QToolButton, QFileDialog
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
-from core.pgn_renderer import resolveImageBytes
+from core.pgn_renderer import resolveImageBytes, checkPgn
 from ui.editor_style import INPUT_RADIUS
 from ui.theme import palette
 from core.i18n import t
@@ -35,6 +35,12 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.pgnEdit.setMaximumHeight(76)
         self.pgnEdit.textChanged.connect(self.onFieldChanged)
         layout.addWidget(self.pgnEdit)
+
+        self.errorLabel = QLabel()    # PGN 有誤時顯示在輸入框下方
+        self.errorLabel.setWordWrap(True)
+        self.errorLabel.setStyleSheet(f"background: transparent; color: {p.danger}; font-size: 12px;")
+        self.errorLabel.hide()
+        layout.addWidget(self.errorLabel)
 
         ### 按鈕列：[▼][上傳圖片] ........ [刪除圖片 / 使用預設] ###
         buttonRow = QHBoxLayout()
@@ -127,7 +133,16 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
     def getNoImage(self):
         return self.noImage
 
+    def refreshPgnError(self):
+        message = checkPgn(self.getPgn())
+        self.errorLabel.setText(message or "")
+        self.errorLabel.setVisible(bool(message))
+        self.pgnEdit.setProperty("invalid", bool(message))    # 讓輸入框邊框變紅
+        self.pgnEdit.style().unpolish(self.pgnEdit)
+        self.pgnEdit.style().polish(self.pgnEdit)
+
     def refreshPreview(self, expand=False):    # expand=True 或圖片剛出現時，自動展開預覽
+        self.refreshPgnError()
         rawBytes = resolveImageBytes(self.getPgn(), self.imagePath, self.orientation, self.noImage)
         pixmap = None
         if rawBytes:

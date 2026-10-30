@@ -262,6 +262,7 @@ class EditorPanel(QScrollArea):
         self.currentOrientation = orientation
         for editor in self.imageEditors:
             editor.setOrientation(orientation)
+        self.onModelChanged()    # 視角是存檔內容，需要標記為已修改
 
     def updateStartingPgn(self, opening, pgnEditor):
         opening.startingPgn = pgnEditor.getPgn()
