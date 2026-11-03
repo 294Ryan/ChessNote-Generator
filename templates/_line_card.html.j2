@@ -6,7 +6,11 @@
         </span>
         <span class="line-toggle"></span>
     </summary>
-    {% if line.image %}
+    {% if line.board is not none %}
+    <div class="line-board">
+        <div class="cb cb-line" data-own="{{ line.board }}" aria-label="{{ opening.altLine }}"></div>
+    </div>
+    {% elif line.image %}
     <div class="line-board">
         <img src="{{ line.image }}" alt="{{ opening.altLine }}">
     </div>

@@ -32,6 +32,7 @@ TEXTS = {
         "perspective": "Perspective", "eyebrow": "Chess Opening Study",
         "startingPosition": "起始局面", "basePosition": "基本局面",
         "expand": "展開 ▾", "collapse": "收合 ▴", "altStarting": "起始局面棋盤圖", "altLine": "Line 棋盤圖",
+        "boardPrev": "上一步", "boardReset": "重置", "boardNext": "下一步",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "另存專案",
         "saveMessage": "確定要儲存目前的修改嗎？檔案 {file} 會被直接覆蓋。",
@@ -69,6 +70,7 @@ TEXTS = {
         "perspective": "棋盘视角", "eyebrow": "国际象棋开局研究",
         "startingPosition": "起始局面", "basePosition": "基本局面",
         "expand": "展开 ▾", "collapse": "收起 ▴", "altStarting": "起始局面棋盘图", "altLine": "Line 棋盘图",
+        "boardPrev": "上一步", "boardReset": "重置", "boardNext": "下一步",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "另存为项目",
         "saveMessage": "确定要保存当前的修改吗？文件 {file} 将被直接覆盖。",
@@ -106,6 +108,7 @@ TEXTS = {
         "perspective": "Perspective", "eyebrow": "Chess Opening Study",
         "startingPosition": "Starting Position", "basePosition": "Starting Position",
         "expand": "Expand ▾", "collapse": "Collapse ▴", "altStarting": "Starting position board", "altLine": "Line board",
+        "boardPrev": "Prev", "boardReset": "Reset", "boardNext": "Next",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "Save Project As…",
         "saveMessage": "Save your changes now? The file {file} will be overwritten.",
@@ -143,6 +146,7 @@ TEXTS = {
         "perspective": "視点", "eyebrow": "チェスオープニング研究",
         "startingPosition": "開始局面", "basePosition": "開始局面",
         "expand": "展開 ▾", "collapse": "折りたたむ ▴", "altStarting": "開始局面の盤面図", "altLine": "Line の盤面図",
+        "boardPrev": "戻る", "boardReset": "リセット", "boardNext": "進む",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "名前を付けてプロジェクトを保存",
         "saveMessage": "現在の変更を保存しますか？ファイル {file} は上書きされます。",
@@ -180,6 +184,7 @@ TEXTS = {
         "perspective": "관점", "eyebrow": "체스 오프닝 연구",
         "startingPosition": "시작 포지션", "basePosition": "시작 포지션",
         "expand": "펼치기 ▾", "collapse": "접기 ▴", "altStarting": "시작 포지션 보드 이미지", "altLine": "Line 보드 이미지",
+        "boardPrev": "이전", "boardReset": "초기화", "boardNext": "다음",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "다른 이름으로 프로젝트 저장",
         "saveMessage": "현재 변경 사항을 저장할까요? {file} 파일을 덮어씁니다.",
@@ -217,6 +222,7 @@ TEXTS = {
         "perspective": "Perspectiva", "eyebrow": "Estudio de apertura de ajedrez",
         "startingPosition": "Posición inicial", "basePosition": "Posición inicial",
         "expand": "Expandir ▾", "collapse": "Contraer ▴", "altStarting": "Tablero de la posición inicial", "altLine": "Tablero de la Line",
+        "boardPrev": "Anterior", "boardReset": "Reiniciar", "boardNext": "Siguiente",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "Guardar proyecto como…",
         "saveMessage": "¿Guardar los cambios actuales? El archivo {file} se sobrescribirá.",
@@ -254,6 +260,7 @@ TEXTS = {
         "perspective": "Перспектива", "eyebrow": "Изучение шахматного дебюта",
         "startingPosition": "Начальная позиция", "basePosition": "Начальная позиция",
         "expand": "Развернуть ▾", "collapse": "Свернуть ▴", "altStarting": "Доска начальной позиции", "altLine": "Доска Line",
+        "boardPrev": "Назад", "boardReset": "Сброс", "boardNext": "Вперёд",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "Сохранить проект как…",
         "saveMessage": "Сохранить текущие изменения? Файл {file} будет перезаписан.",
@@ -291,6 +298,7 @@ TEXTS = {
         "perspective": "Perspektive", "eyebrow": "Schacheröffnungsstudie",
         "startingPosition": "Ausgangsstellung", "basePosition": "Ausgangsstellung",
         "expand": "Aufklappen ▾", "collapse": "Zuklappen ▴", "altStarting": "Brett der Ausgangsstellung", "altLine": "Brett der Line",
+        "boardPrev": "Zurück", "boardReset": "Reset", "boardNext": "Weiter",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "Projekt speichern unter…",
         "saveMessage": "Aktuelle Änderungen speichern? Die Datei {file} wird überschrieben.",
@@ -328,6 +336,7 @@ TEXTS = {
         "perspective": "Perspective", "eyebrow": "Étude d'ouverture d'échecs",
         "startingPosition": "Position initiale", "basePosition": "Position initiale",
         "expand": "Développer ▾", "collapse": "Réduire ▴", "altStarting": "Échiquier de la position initiale", "altLine": "Échiquier de la Line",
+        "boardPrev": "Précédent", "boardReset": "Réinit.", "boardNext": "Suivant",
         # 儲存確認 / 未存檔提示 / PGN 錯誤提示
         "menuSaveAsProject": "Enregistrer le projet sous…",
         "saveMessage": "Enregistrer les modifications actuelles ? Le fichier {file} sera écrasé.",

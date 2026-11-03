@@ -205,6 +205,37 @@
         background: #ffffff;
     }
 
+    /* ===== 互動棋盤 ===== */
+    .cb { width: 100%; margin: 0 auto; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .cb-start { max-width: 340px; }
+    .cb-line { max-width: 300px; }
+    .cb-svg { display: block; width: 100%; height: auto; border: 1px solid var(--color-rule); background: #ffffff; -webkit-tap-highlight-color: transparent; }
+    .cb-svg * { pointer-events: none; }
+    .cb-sq-l { fill: #f0e9d6; }
+    .cb-sq-d { fill: #c8b595; }
+    .cb-co { font: 600 22px var(--font-sans); }
+    .cb-co-l { fill: #9a8460; }
+    .cb-co-d { fill: #f7f0df; }
+    .cb-last { fill: var(--color-accent-soft); opacity: 0.35; }
+    .cb-sel { fill: var(--color-accent); opacity: 0.3; }
+    .cb-dot { fill: var(--color-accent); opacity: 0.35; }
+    .cb-ring { fill: none; stroke: var(--color-accent); stroke-width: 8; opacity: 0.35; }
+    .cb-ar polyline { fill: none; stroke-width: 20; }
+    .cb-ar polyline, .cb-ar polygon { stroke: var(--color-accent); }
+    .cb-ar polygon { fill: var(--color-accent); stroke-width: 1; stroke-linejoin: round; }
+    .cb-ar-main { opacity: 0.85; }
+    .cb-ar-alt { opacity: 0.4; }
+    .cb-ghost { opacity: 0.35; }
+    .cb-ctl { display: flex; gap: 6px; margin-top: 8px; }
+    .cb-ctl button {
+        flex: 1; min-width: 0; min-height: 44px; padding: 0 4px;
+        font: 0.85rem var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        color: var(--color-ink); background: var(--color-bg-panel);
+        border: 1px solid var(--color-rule); border-radius: 4px; cursor: pointer;
+    }
+    .cb-ctl button:not(:disabled):hover { background: #ebe3d0; }
+    .cb-ctl button:disabled { opacity: 0.4; cursor: default; }
+
     /* ===== 響應式（手機）===== */
     @media (max-width: 600px) {
         .page { padding: 40px 18px 80px; }
@@ -227,10 +258,14 @@
         .line-pgn .expanded { display: block !important; }
         .line-board { display: block !important; }
         .line-toggle { display: none; }
+        .cb-ctl, .cb-ar { display: none; }
     }
 </style>
 </head>
 <body>
+{% if opening.hasBoards %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>{{ opening.pieceDefs|safe }}</defs></svg>
+{% endif %}
 <div class="page">
 
     <header class="masthead">
@@ -243,7 +278,11 @@
     <section class="starting-section">
         <h2 class="variant-title">{{ opening.startingPosition }}</h2>
         <div class="pgn-block">{{ opening.startingPgn }}</div>
-        {% if opening.startingImage %}
+        {% if opening.startingBoard is not none %}
+        <figure class="board-figure">
+            <div class="cb cb-start" data-own="{{ opening.startingBoard }}" data-scope="all" aria-label="{{ opening.altStarting }}"></div>
+        </figure>
+        {% elif opening.startingImage %}
         <figure class="board-figure">
             <img src="{{ opening.startingImage }}" alt="{{ opening.altStarting }}">
         </figure>
@@ -280,5 +319,11 @@
     {% endfor %}
 
 </div>
+{% if opening.hasBoards %}
+<script type="application/json" id="boardData">{{ opening.boardJson|safe }}</script>
+<script>
+{{ opening.boardJs|safe }}
+</script>
+{% endif %}
 </body>
 </html>
