@@ -40,7 +40,7 @@ def buildBoardJson(orientation, lines):
     data = {
         "o": orientation,
         "l": lines,
-        "t": {"viewAll": t("boardViewAll", n="{n}")},    # {n} 由 JS 代入符合的 Line 數
+        "t": {"viewAll": t("boardViewAll", n="{n}"), "collapse": t("collapse")},    # {n} 由 JS 代入符合的 Line 數
     }
     return json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")    # 避免資料中出現 </script> 破壞頁面
 

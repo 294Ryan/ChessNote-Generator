@@ -216,13 +216,15 @@
     /* ===== 符合的 Line ===== */
     .cb-match { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .cb-match:empty { display: none; }
-    .cb-chip, .cb-more {
+    .cb-chip, .cb-toggle {
         flex: 0 1 auto; max-width: 100%; min-height: 36px; padding: 0 10px;
-        font: 0.8rem var(--font-sans); color: var(--color-accent);
-        background: var(--color-bg-panel); border: 1px solid var(--color-accent-soft); border-radius: 999px; cursor: pointer;
+        font: 0.8rem var(--font-sans); border-radius: 3px; cursor: pointer;
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .cb-chip:hover, .cb-more:hover { background: #ebe3d0; }
+    .cb-chip { color: var(--color-accent); background: var(--color-bg-panel); border: 1px solid var(--color-accent-soft); }
+    .cb-toggle { color: var(--color-ink-soft); background: transparent; border: 1px dashed var(--color-ink-faint); }    /* 與線名按鈕區隔：虛線、灰褐字、透明底 */
+    .cb-chip:hover, .cb-toggle:hover { background: #ebe3d0; }
+    .cb-foot { flex: 0 0 100%; display: flex; }
     @keyframes cbFlash { 0% { box-shadow: 0 0 0 3px var(--color-accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
     .line-card.cb-flash { animation: cbFlash 1.6s ease-out; }
 

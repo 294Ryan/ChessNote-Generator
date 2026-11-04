@@ -72,9 +72,20 @@
         return tokens;
     }
 
+    function moveNumberPrefix(idx, text, tokens, firstShown) {    // 截斷後的第一步若沒有手數就補上，如 6...Kxf7；格式（有無空格）跟著原文
+        if (tokens[firstShown].numStart < tokens[firstShown].start) {
+            return "";
+        }
+        const fen = (data.l[idx][0] || startFen).split(" ");
+        const ordinal = firstShown + (fen[1] === "b" ? 1 : 0);    // 偶數＝白方走
+        const number = (+fen[5] || 1) + Math.floor(ordinal / 2);
+        const compact = tokens.some(tk => tk.numStart < tk.start && !/\s$/.test(text.slice(tk.numStart, tk.start)));
+        return number + (ordinal % 2 ? "..." : ".") + (compact ? "" : " ");
+    }
+
     function fillMoves(info) {    // 重建文字，每個著法包成 span；firstShown 之前的著法（與起始 PGN 相同的部分）不顯示
         const container = info.container;
-        container.textContent = "";
+        container.textContent = info.prefix;
         let pos = info.firstShown > 0 ? info.tokens[info.firstShown].numStart : 0;
         for (let j = info.firstShown; j < info.tokens.length; j++) {
             const tk = info.tokens[j];
@@ -100,15 +111,16 @@
             const skip = data.l[idx][2];
             const cut = data.l[idx][3];
             const valid = tokens.length > 0 && tokens.length === lineMoves(idx).length - (cut ? 0 : skip);    // 著法數對不上就不標記、不截斷
+            const firstShown = valid && cut ? skip : 0;
             const info = {text: text, tokens: tokens, valid: valid, container: container, spans: [], cur: null,
-                base: cut ? 0 : skip, firstShown: valid && cut ? skip : 0};
+                base: cut ? 0 : skip, firstShown: firstShown, prefix: firstShown > 0 ? moveNumberPrefix(idx, text, tokens, firstShown) : ""};
             infoByIdx[idx] = info;
             if (!valid) {
                 return;
             }
             fillMoves(info);
             if (isCard && info.firstShown > 0) {
-                el.querySelector(".collapsed .pgn-text").textContent = text.slice(tokens[info.firstShown].numStart);
+                el.querySelector(".collapsed .pgn-text").textContent = info.prefix + text.slice(tokens[info.firstShown].numStart);
             }
         });
     }
@@ -220,10 +232,10 @@
         const len = Math.hypot(x2 - px, y2 - py);
         const ux = (x2 - px) / len;
         const uy = (y2 - py) / len;
-        const tip = [x2 - ux * 12, y2 - uy * 12];
-        const base = [tip[0] - ux * 40, tip[1] - uy * 40];
+        const tip = [x2 - ux * 10, y2 - uy * 10];
+        const base = [tip[0] - ux * 28, tip[1] - uy * 28];
         const line = pts.slice(0, -1).concat([base]).map(p => p.join(",")).join(" ");
-        const head = [tip, [base[0] - uy * 30, base[1] + ux * 30], [base[0] + uy * 30, base[1] - ux * 30]].map(p => p.join(",")).join(" ");
+        const head = [tip, [base[0] - uy * 21, base[1] + ux * 21], [base[0] + uy * 21, base[1] - ux * 21]].map(p => p.join(",")).join(" ");
         return `<g class="cb-ar ${cls}"><polyline points="${line}"/><polygon points="${head}"/></g>`;
     }
 
@@ -265,6 +277,7 @@
         const matchEl = document.createElement("div");
         matchEl.className = "cb-match";
         let defaultMatches = [];
+        let showAllChips = false;    // 超過 4 條時，是否已展開全部
 
         function matchesAt(p) {
             const key = posKey(p);
@@ -292,34 +305,50 @@
             card.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "start"});
         }
 
+        function makeChip(index) {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "cb-chip";
+            chip.textContent = labelOf(index);
+            chip.addEventListener("click", () => jumpTo(index));
+            return chip;
+        }
+
+        function makeToggle(text, expand) {
+            const toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "cb-toggle";
+            toggle.textContent = text;
+            toggle.setAttribute("aria-expanded", expand ? "false" : "true");
+            toggle.addEventListener("click", () => {
+                showAllChips = expand;
+                renderMatches();
+                matchEl.querySelector(".cb-toggle").focus({preventScroll: true});
+            });
+            return toggle;
+        }
+
         function renderMatches() {
             matchEl.textContent = "";
             const matched = matchesAt(pos);
             if (!matched.length || defaultMatches.every(index => matched.includes(index))) {
+                showAllChips = false;
                 return;    // 沒比預設局面窄，比對沒有意義
             }
-            const showAll = matched.length > 4;
-            for (const index of showAll ? matched.slice(0, 3) : matched) {
-                const chip = document.createElement("button");
-                chip.type = "button";
-                chip.className = "cb-chip";
-                chip.textContent = labelOf(index);
-                chip.addEventListener("click", () => jumpTo(index));
-                matchEl.appendChild(chip);
+            const overflow = matched.length > 4;
+            if (!overflow) {
+                showAllChips = false;
             }
-            if (showAll) {
-                const select = document.createElement("select");
-                select.className = "cb-more";
-                select.add(new Option(data.t.viewAll.replace("{n}", matched.length), ""));
-                matched.forEach(index => select.add(new Option(labelOf(index), index)));
-                select.addEventListener("change", () => {
-                    const value = select.value;
-                    select.value = "";
-                    if (value !== "") {
-                        jumpTo(+value);
-                    }
-                });
-                matchEl.appendChild(select);
+            for (const index of overflow && !showAllChips ? matched.slice(0, 3) : matched) {
+                matchEl.appendChild(makeChip(index));
+            }
+            if (overflow && !showAllChips) {
+                matchEl.appendChild(makeToggle(data.t.viewAll.replace("{n}", matched.length), true));    // 第 4 格
+            } else if (overflow) {
+                const foot = document.createElement("div");
+                foot.className = "cb-foot";
+                foot.appendChild(makeToggle(data.t.collapse, false));    // 展開後的最底部
+                matchEl.appendChild(foot);
             }
         }
 
