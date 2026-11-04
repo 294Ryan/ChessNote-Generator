@@ -91,7 +91,7 @@ def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 
 
 
 def addImageIfExists(doc, pgn, imagePath, orientation, noImage, startingPgn=""):
-    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn)
+    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn, htmlStyle=True)    # 與 html 相同的棋盤樣式
     if rawBytes:
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 

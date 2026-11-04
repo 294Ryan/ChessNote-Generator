@@ -21,7 +21,7 @@ def escapeText(text):
 
 
 def buildImageTag(doc, pgn, imagePath, orientation, noImage, width, startingPgn=""):
-    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn)
+    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn, htmlStyle=True)    # 與 html 相同的棋盤樣式
     if rawBytes is None:
         return ""
 

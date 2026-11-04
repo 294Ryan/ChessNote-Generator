@@ -144,7 +144,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
     def refreshPreview(self, expand=False):    # expand=True 或圖片剛出現時，自動展開預覽
         self.refreshPgnError()
-        rawBytes = resolveImageBytes(self.getPgn(), self.imagePath, self.orientation, self.noImage, self.getStartingPgn())
+        rawBytes = resolveImageBytes(self.getPgn(), self.imagePath, self.orientation, self.noImage, self.getStartingPgn(), htmlStyle=True)    # 預覽用 html 棋盤的樣式
         pixmap = None
         if rawBytes:
             pixmap = QPixmap()
