@@ -1,8 +1,8 @@
-<details class="line-card">
+<details class="line-card"{% if line.index is not none %} id="line-{{ line.index }}" data-idx="{{ line.index }}"{% endif %}>
     <summary>
         <span class="line-pgn">
-            <span class="collapsed"><span class="pgn-mark">&nbsp;{{ line.pgnPreview }}&nbsp;</span></span>
-            <span class="expanded"><span class="pgn-mark">&nbsp;{{ line.pgn }}&nbsp;</span></span>
+            <span class="collapsed"><span class="pgn-mark">&nbsp;<span class="pgn-text">{{ line.pgn }}</span>&nbsp;</span><span class="pgn-dots">.....</span></span>
+            <span class="expanded"><span class="pgn-mark">&nbsp;<span class="pgn-text">{{ line.pgn }}</span>&nbsp;</span></span>
         </span>
         <span class="line-toggle"></span>
     </summary>

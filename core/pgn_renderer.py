@@ -8,6 +8,18 @@ from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import QByteArray, QBuffer, QIODevice
 from core.i18n import t
 
+LEADING_NUMBER = re.compile(r"\s*(\d+)\s*(\.+)")
+TRAILING_RESULT = re.compile(r"\s*(1-0|0-1|1/2-1/2|\*)\s*$")
+
+def resolvePgn(pgn, startingPgn):    # Line 可寫完整 PGN，或只寫起始 PGN 之後的接續著法；回傳完整 PGN
+    match = LEADING_NUMBER.match(pgn)
+    if not startingPgn.strip() or not match:    # 沒帶手數一律視為完整 PGN，不合法就由後續解析回報錯誤
+        return pgn
+    if match.group(1) == "1" and len(match.group(2)) == 1:    # 「1.」開頭是完整 PGN；「1...」或其他手數才是接續
+        return pgn
+    return TRAILING_RESULT.sub("", startingPgn) + "\n" + pgn
+
+
 def renderPgnToPng(pgn, boardSize=400, orientation="white"):
     game = chess.pgn.read_game(io.StringIO(pgn))
     if game is None:
@@ -32,9 +44,10 @@ def renderPgnToPng(pgn, boardSize=400, orientation="white"):
     return bytes(buffer.data())
 
 
-def checkPgn(pgn):    # PGN 有誤回傳說明文字（已依目前語言翻譯）；空白或沒問題回傳 None
+def checkPgn(pgn, startingPgn=""):    # PGN 有誤回傳說明文字（已依目前語言翻譯）；空白或沒問題回傳 None
     if not pgn.strip():
         return None
+    pgn = resolvePgn(pgn, startingPgn)
     game = chess.pgn.read_game(io.StringIO(pgn))
     errors = getattr(game, "errors", []) if game else []
     if not errors:
@@ -55,7 +68,7 @@ def savePngToFile(pngBytes, filePath):
         f.write(pngBytes)
 
 
-def resolveImageBytes(pgn, imagePath, orientation="white", noImage=False):
+def resolveImageBytes(pgn, imagePath, orientation="white", noImage=False, startingPgn=""):
     if noImage:
         return None    # 使用者刻意刪除圖片
 
@@ -66,4 +79,4 @@ def resolveImageBytes(pgn, imagePath, orientation="white", noImage=False):
     if not pgn.strip():
         return None    # 沒有 PGN 也沒有上傳圖，不顯示
 
-    return renderPgnToPng(pgn, orientation=orientation)    # 回傳 None 代表 PGN 無法解析
+    return renderPgnToPng(resolvePgn(pgn, startingPgn), orientation=orientation)    # 回傳 None 代表 PGN 無法解析

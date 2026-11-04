@@ -90,8 +90,8 @@ def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 
     return paragraph
 
 
-def addImageIfExists(doc, pgn, imagePath, orientation, noImage):
-    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage)
+def addImageIfExists(doc, pgn, imagePath, orientation, noImage, startingPgn=""):
+    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn)
     if rawBytes:
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 
@@ -104,9 +104,9 @@ def addDescriptionIfExists(doc, obj, color=None):    # 直接顯示說明正文�
             run.font.color.rgb = color
 
 
-def addLineSection(doc, line, orientation):
+def addLineSection(doc, line, orientation, startingPgn):
     addPgnParagraph(doc, line.pgn)
-    addImageIfExists(doc, line.pgn, line.imagePath, orientation, line.noImage)
+    addImageIfExists(doc, line.pgn, line.imagePath, orientation, line.noImage, startingPgn)
 
 
 def exportDocx(opening, outputPath):
@@ -128,12 +128,12 @@ def exportDocx(opening, outputPath):
         addDescriptionIfExists(doc, variant)
 
         for line in variant.lines:    # Line 排在子分類之前
-            addLineSection(doc, line, opening.orientation)
+            addLineSection(doc, line, opening.orientation, opening.startingPgn)
 
         for sub in variant.subCategories:
             doc.add_heading(sub.name, level=3)
             addDescriptionIfExists(doc, sub)
             for line in sub.lines:
-                addLineSection(doc, line, opening.orientation)
+                addLineSection(doc, line, opening.orientation, opening.startingPgn)
 
     doc.save(outputPath)

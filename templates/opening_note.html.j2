@@ -191,7 +191,10 @@
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
     }
-    .line-pgn .collapsed { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .line-pgn .collapsed { display: flex; align-items: baseline; min-width: 0; }    /* 文字在邊界裁切，「.....」固定在右側，確保完整可見 */
+    .line-pgn .collapsed .pgn-mark { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; }
+    .pgn-dots { display: none; flex: none; padding-left: 4px; color: var(--color-ink-faint); }
+    .collapsed.is-clipped .pgn-dots { display: block; }
     .line-card[open] .line-pgn .collapsed { display: none; }
     .line-pgn .expanded { display: none; white-space: pre-wrap; overflow-wrap: anywhere; }
     .line-card[open] .line-pgn .expanded { display: block; }
@@ -204,6 +207,24 @@
         padding: 6px;
         background: #ffffff;
     }
+
+    /* ===== PGN 著法標記 ===== */
+    .pgn-mv.live { cursor: pointer; border-radius: 2px; }
+    .pgn-mv.live:hover { background: rgba(122, 46, 46, 0.14); }
+    .pgn-mv.cur, .pgn-mv.cur:hover { background: var(--color-accent); color: #ffffff; font-weight: 700; }
+
+    /* ===== 符合的 Line ===== */
+    .cb-match { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .cb-match:empty { display: none; }
+    .cb-chip, .cb-more {
+        flex: 0 1 auto; max-width: 100%; min-height: 36px; padding: 0 10px;
+        font: 0.8rem var(--font-sans); color: var(--color-accent);
+        background: var(--color-bg-panel); border: 1px solid var(--color-accent-soft); border-radius: 999px; cursor: pointer;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cb-chip:hover, .cb-more:hover { background: #ebe3d0; }
+    @keyframes cbFlash { 0% { box-shadow: 0 0 0 3px var(--color-accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+    .line-card.cb-flash { animation: cbFlash 1.6s ease-out; }
 
     /* ===== 互動棋盤 ===== */
     .cb { width: 100%; margin: 0 auto; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -258,7 +279,8 @@
         .line-pgn .expanded { display: block !important; }
         .line-board { display: block !important; }
         .line-toggle { display: none; }
-        .cb-ctl, .cb-ar { display: none; }
+        .cb-ctl, .cb-ar, .cb-match { display: none; }
+        .pgn-mv.cur { background: none; color: inherit; font-weight: inherit; }
     }
 </style>
 </head>
@@ -277,7 +299,7 @@
 
     <section class="starting-section">
         <h2 class="variant-title">{{ opening.startingPosition }}</h2>
-        <div class="pgn-block">{{ opening.startingPgn }}</div>
+        <div class="pgn-block"{% if opening.startingIndex is not none %} data-idx="{{ opening.startingIndex }}"{% endif %}><span class="pgn-text">{{ opening.startingPgn }}</span></div>
         {% if opening.startingBoard is not none %}
         <figure class="board-figure">
             <div class="cb cb-start" data-own="{{ opening.startingBoard }}" data-scope="all" aria-label="{{ opening.altStarting }}"></div>
@@ -319,11 +341,9 @@
     {% endfor %}
 
 </div>
-{% if opening.hasBoards %}
 <script type="application/json" id="boardData">{{ opening.boardJson|safe }}</script>
 <script>
 {{ opening.boardJs|safe }}
 </script>
-{% endif %}
 </body>
 </html>

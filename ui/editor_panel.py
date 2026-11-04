@@ -105,6 +105,7 @@ class EditorPanel(QScrollArea):
         self.siblingLists.clear()
         self.imageEditors.clear()
 
+        self.opening = opening    # Line 編輯器隨時讀取最新的起始 PGN
         self.currentOrientation = opening.orientation    # Line 編輯器建立時取用
         self.addOpeningSection(opening)
 
@@ -188,7 +189,7 @@ class EditorPanel(QScrollArea):
         layout = frame.contentLayout
         layout.addWidget(self.makeHeading("LINE", COLOR_LINE, DragHandle(line.id, frame)))
 
-        pgnEditor = PgnImageEditor(line.pgn, line.imagePath, line.noImage, self.currentOrientation, collapsible=True)
+        pgnEditor = PgnImageEditor(line.pgn, line.imagePath, line.noImage, self.currentOrientation, collapsible=True, getStartingPgn=lambda: self.opening.startingPgn)
         pgnEditor.changed.connect(lambda: self.updateLinePgn(line, pgnEditor))
         self.imageEditors.append(pgnEditor)
         layout.addWidget(pgnEditor)
@@ -268,6 +269,9 @@ class EditorPanel(QScrollArea):
         opening.startingPgn = pgnEditor.getPgn()
         opening.startingImagePath = pgnEditor.getImagePath()
         opening.startingNoImage = pgnEditor.getNoImage()
+        for editor in self.imageEditors:
+            if editor is not pgnEditor:
+                editor.previewTimer.start()    # 接續寫法的 Line 依新的起始局面重新檢查與預覽
         self.onModelChanged()
 
     def updateLinePgn(self, line, pgnEditor):

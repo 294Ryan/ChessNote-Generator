@@ -13,8 +13,9 @@ PREVIEW_WIDTH = 280    # 預覽圖寬度（像素）
 class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀態：自動產生 / 手動上傳 / 刪除（空白）
     changed = pyqtSignal()
 
-    def __init__(self, pgn="", imagePath=None, noImage=False, orientation="white", collapsible=True):
+    def __init__(self, pgn="", imagePath=None, noImage=False, orientation="white", collapsible=True, getStartingPgn=None):
         super().__init__()
+        self.getStartingPgn = getStartingPgn or (lambda: "")    # Line 取得起始 PGN，用來解析「接續寫法」；起始 PGN 本身不需要
         self.imagePath = imagePath    # 手動上傳的圖片路徑，None 代表用自動生成圖
         self.noImage = noImage    # True 代表刻意不放圖片
         self.orientation = orientation    # 自動生成圖的棋盤視角 white / black
@@ -134,7 +135,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         return self.noImage
 
     def refreshPgnError(self):
-        message = checkPgn(self.getPgn())
+        message = checkPgn(self.getPgn(), self.getStartingPgn())
         self.errorLabel.setText(message or "")
         self.errorLabel.setVisible(bool(message))
         self.pgnEdit.setProperty("invalid", bool(message))    # 讓輸入框邊框變紅
@@ -143,7 +144,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
     def refreshPreview(self, expand=False):    # expand=True 或圖片剛出現時，自動展開預覽
         self.refreshPgnError()
-        rawBytes = resolveImageBytes(self.getPgn(), self.imagePath, self.orientation, self.noImage)
+        rawBytes = resolveImageBytes(self.getPgn(), self.imagePath, self.orientation, self.noImage, self.getStartingPgn())
         pixmap = None
         if rawBytes:
             pixmap = QPixmap()

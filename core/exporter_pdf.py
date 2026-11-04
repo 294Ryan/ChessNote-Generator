@@ -20,8 +20,8 @@ def escapeText(text):
     return html.escape(text).replace("\n", "<br>")
 
 
-def buildImageTag(doc, pgn, imagePath, orientation, noImage, width):
-    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage)
+def buildImageTag(doc, pgn, imagePath, orientation, noImage, width, startingPgn=""):
+    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn)
     if rawBytes is None:
         return ""
 
@@ -47,9 +47,9 @@ def buildDescription(text):
     return f'<p style="font-style:italic; color:{SOFT};">{escapeText(text)}</p>'
 
 
-def buildLines(doc, lines, orientation):
+def buildLines(doc, lines, orientation, startingPgn):
     return "".join(
-        buildPgnBlock(l.pgn) + buildImageTag(doc, l.pgn, l.imagePath, orientation, l.noImage, IMAGE_WIDTH)
+        buildPgnBlock(l.pgn) + buildImageTag(doc, l.pgn, l.imagePath, orientation, l.noImage, IMAGE_WIDTH, startingPgn)
         for l in lines
     )
 
@@ -70,11 +70,11 @@ def buildHtml(doc, opening):
         parts.append(f'<hr style="color:{RULE};">')
         parts.append(f'<h2 style="font-size:18pt;"><span style="color:{ACCENT};">§</span> {html.escape(variant.name)}</h2>')
         parts.append(buildDescription(variant.description))
-        parts.append(buildLines(doc, variant.lines, orientation))
+        parts.append(buildLines(doc, variant.lines, orientation, opening.startingPgn))
         for sub in variant.subCategories:
             parts.append(f'<h3 style="font-size:14pt;">{html.escape(sub.name)}</h3>')
             parts.append(buildDescription(sub.description))
-            parts.append(buildLines(doc, sub.lines, orientation))
+            parts.append(buildLines(doc, sub.lines, orientation, opening.startingPgn))
 
     parts.append('</body>')
     return "".join(parts)
