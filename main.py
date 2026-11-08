@@ -9,7 +9,7 @@ os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = pluginPath
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QFontDatabase
 from ui.main_window import MainWindow
-from core.i18n import setLanguage, detectSystemLanguage
+from core.i18n import setLanguage
 
 def loadAppFont(app):
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))    # 打包後與原始碼兩種環境
@@ -23,7 +23,7 @@ def loadAppFont(app):
 def main():
     app = QApplication(sys.argv)
     loadAppFont(app)
-    setLanguage(detectSystemLanguage())    # 依系統語言決定起始語言，不記住上次選擇
+    setLanguage("en")    # 每次啟動固定用英文，不記住上次選擇
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
