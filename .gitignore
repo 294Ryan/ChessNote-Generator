@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+*.pyc
 
 .venv/
 venv/
@@ -25,3 +26,26 @@ Desktop.ini
 
 *.log
 .pytest_cache/
+
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+local.properties
+
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+
+*.jks
+*.keystore
+keystore.properties

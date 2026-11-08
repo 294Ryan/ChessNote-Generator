@@ -1,0 +1,286 @@
+package com.chessnote.core
+
+// 取自桌面版 opening_note.html.j2 的樣式，維持兩邊外觀一致
+val exportCss: String = listOf(
+    """    /* ===== 設計系統：編輯式出版品風格 ===== */
+    :root {
+        --color-bg: #faf8f3;
+        --color-bg-panel: #f3efe4;
+        --color-ink: #2a2520;
+        --color-ink-soft: #655c4e;
+        --color-ink-faint: #9a9080;
+        --color-rule: #ddd3bf;
+        --color-accent: #7a2e2e;
+        --color-accent-soft: #a9664a;
+        --color-card-bg: #ffffff;
+
+        --font-serif: Georgia, 'Noto Serif TC', 'PMingLiU', '新細明體', serif;
+        --font-sans: -apple-system, 'Segoe UI', 'Microsoft JhengHei', 'PingFang TC', sans-serif;
+        --font-mono: Consolas, 'SF Mono', Menlo, 'Courier New', monospace;
+
+        --content-width: 720px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+        margin: 0;
+        background: var(--color-bg);
+        color: var(--color-ink);
+        font-family: var(--font-serif);
+        line-height: 1.75;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+        max-width: var(--content-width);
+        margin: 0 auto;
+        padding: 72px 28px 120px;
+    }
+
+    /* ===== 標題區 ===== */
+    .masthead {
+        border-bottom: 1px solid var(--color-rule);
+        padding-bottom: 28px;
+        margin-bottom: 48px;
+    }
+    .eyebrow {
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--color-accent);
+        margin: 0 0 10px;
+    }
+    .opening-title {
+        font-size: 2.1rem;
+        font-weight: 600;
+        margin: 0 0 14px;
+        letter-spacing: 0.01em;
+    }
+    .opening-orient {
+        color: var(--color-ink-soft);
+        margin: 0 0 10px;
+        font-size: 1.02rem;
+    }
+    .opening-desc {
+        font-style: italic;
+        color: var(--color-ink-soft);
+        max-width: 58ch;
+        margin: 0;
+        font-size: 1.02rem;
+    }
+
+    /* ===== 共用：區塊標籤 / 說明文字 ===== */
+    .section-desc {
+        font-style: italic;
+        color: var(--color-ink-soft);
+        max-width: 62ch;
+        margin: 8px 0 20px;
+        font-size: 0.96rem;
+        line-height: 1.65;
+    }
+
+    /* ===== PGN 區塊 ===== */
+    .pgn-block {
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        background: var(--color-bg-panel);
+        border-left: 3px solid var(--color-rule);
+        padding: 12px 16px;
+        white-space: pre-wrap;
+        line-height: 1.6;
+        color: var(--color-ink);
+    }
+
+    /* ===== 棋盤圖 ===== */
+    .board-figure {
+        text-align: center;
+        margin: 24px 0 8px;
+    }
+    .board-figure img {
+        max-width: min(360px, 100%);
+        border: 1px solid var(--color-rule);
+        padding: 8px;
+        background: #ffffff;
+    }
+
+    /* ===== 起始局面 ===== */
+    .starting-section { margin-bottom: 56px; }
+    .starting-section .variant-title { margin-bottom: 14px; }
+
+    /* ===== Variant（大段落，地位同起始局面）===== */
+    .variant {
+        margin-top: 48px;
+        padding-top: 32px;
+        border-top: 1px solid var(--color-rule);
+    }
+    .variant-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+    }
+    .variant-title::before {
+        content: "§";
+        color: var(--color-accent);
+        font-weight: 400;
+        font-size: 1.2rem;
+    }
+    .variant-body { margin-top: 18px; margin-left: 2px; }
+
+    /* ===== 子分類（不折疊）===== */
+    .subcategory {
+        margin: 26px 0 18px 4px;
+        padding-left: 20px;
+        border-left: 2px solid var(--color-rule);
+    }
+    .subcategory-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--color-ink);
+    }
+    .subcategory-body { margin-top: 12px; }
+
+    .direct-lines { margin-left: 4px; }
+
+    /* ===== Line 卡片：唯一可折疊的單位 ===== */
+    .line-card {
+        margin: 14px 0;
+        border: 1px solid var(--color-rule);
+        background: var(--color-card-bg);
+        border-radius: 2px;
+    }
+    .line-card summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 11px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+    }
+    .line-card summary::-webkit-details-marker { display: none; }
+    .line-toggle {
+        font-family: var(--font-sans);
+        font-size: 0.68rem;
+        letter-spacing: 0.06em;
+        color: var(--color-ink-faint);
+        white-space: nowrap;
+    }
+    .line-toggle::after { content: "__EXPAND__"; }
+    .line-card[open] .line-toggle::after { content: "__COLLAPSE__"; }
+
+    .line-pgn {    /* 摺疊列本身就是 PGN：收合時單行截斷，展開後完整換行 */
+        flex: 1;
+        min-width: 0;
+        font-family: var(--font-mono);
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+    .pgn-mark {    /* PGN 標記底色：暖米偏粉，搭配深酒紅字，對比約 10:1 */
+        background: #f7eee6;
+        color: #5c2222;
+        border-radius: 2px;
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+    }
+    .line-pgn .collapsed { display: flex; align-items: baseline; min-width: 0; }    /* 文字在邊界裁切，「.....」固定在右側，確保完整可見 */
+    .line-pgn .collapsed .pgn-mark { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; }
+    .pgn-dots { display: none; flex: none; padding-left: 4px; color: var(--color-ink-faint); }
+    .collapsed.is-clipped .pgn-dots { display: block; }
+    .line-card[open] .line-pgn .collapsed { display: none; }
+    .line-pgn .expanded { display: none; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .line-card[open] .line-pgn .expanded { display: block; }
+
+    .line-board { display: none; text-align: center; padding: 4px 16px 16px; }
+    .line-card[open] .line-board { display: block; }
+    .line-board img {
+        max-width: 200px;
+        border: 1px solid var(--color-rule);
+        padding: 6px;
+        background: #ffffff;
+    }
+
+    /* ===== PGN 著法標記 ===== */
+    .pgn-mv.live { cursor: pointer; border-radius: 2px; }
+    .pgn-mv.live:hover { background: rgba(122, 46, 46, 0.14); }
+    .pgn-mv.cur, .pgn-mv.cur:hover { background: var(--color-accent); color: #ffffff; font-weight: 700; }
+
+    /* ===== 符合的 Line ===== */
+    .cb-match { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .cb-match:empty { display: none; }
+    .cb-chip, .cb-toggle {
+        flex: 0 1 auto; max-width: 100%; min-height: 36px; padding: 0 10px;
+        font: 0.8rem var(--font-sans); border-radius: 3px; cursor: pointer;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cb-chip { color: var(--color-accent); background: var(--color-bg-panel); border: 1px solid var(--color-accent-soft); }
+    .cb-toggle { color: var(--color-ink-soft); background: transparent; border: 1px dashed var(--color-ink-faint); }    /* 與線名按鈕區隔：虛線、灰褐字、透明底 */
+    .cb-chip:hover, .cb-toggle:hover { background: #ebe3d0; }
+    .cb-foot { flex: 0 0 100%; display: flex; }
+    @keyframes cbFlash { 0% { box-shadow: 0 0 0 3px var(--color-accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+    .line-card.cb-flash { animation: cbFlash 1.6s ease-out; }
+
+    /* ===== 互動棋盤 ===== */
+    .cb { width: 100%; margin: 0 auto; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .cb-start { max-width: 340px; }
+    .cb-line { max-width: 300px; }
+    .cb-svg { display: block; width: 100%; height: auto; border: 1px solid var(--color-rule); background: #ffffff; -webkit-tap-highlight-color: transparent; }
+    .cb-svg * { pointer-events: none; }
+    .cb-sq-l { fill: #f0e9d6; }
+    .cb-sq-d { fill: #c8b595; }
+    .cb-co { font: 600 22px var(--font-sans); }
+    .cb-co-l { fill: #9a8460; }
+    .cb-co-d { fill: #f7f0df; }
+    .cb-last { fill: var(--color-accent-soft); opacity: 0.35; }
+    .cb-sel { fill: var(--color-accent); opacity: 0.3; }
+    .cb-dot { fill: var(--color-accent); opacity: 0.35; }
+    .cb-ring { fill: none; stroke: var(--color-accent); stroke-width: 8; opacity: 0.35; }
+    .cb-ar polyline { fill: none; stroke-width: 20; }
+    .cb-ar polyline, .cb-ar polygon { stroke: var(--color-accent); }
+    .cb-ar polygon { fill: var(--color-accent); stroke-width: 1; stroke-linejoin: round; }
+    .cb-ar-main { opacity: 0.85; }
+    .cb-ar-alt { opacity: 0.4; }
+    .cb-ghost { opacity: 0.35; }
+    .cb-ctl { display: flex; gap: 6px; margin-top: 8px; }
+    .cb-ctl button {
+        flex: 1; min-width: 0; min-height: 44px; padding: 0 4px;
+        font: 0.85rem var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        color: var(--color-ink); background: var(--color-bg-panel);
+        border: 1px solid var(--color-rule); border-radius: 4px; cursor: pointer;
+    }
+    .cb-ctl button:not(:disabled):hover { background: #ebe3d0; }
+    .cb-ctl button:disabled { opacity: 0.4; cursor: default; }
+
+    /* ===== 響應式（手機）===== */
+    @media (max-width: 600px) {
+        .page { padding: 40px 18px 80px; }
+        .opening-title { font-size: 1.7rem; }
+        .variant-title { font-size: 1.3rem; }
+        .subcategory { margin-left: 0; padding-left: 14px; }
+        .pgn-block, .line-pgn { font-size: 0.82rem; }
+    }
+
+    /* ===== 列印樣式 ===== */
+    @media print {
+        body { background: #ffffff; }
+        .page { padding: 0; max-width: 100%; }
+        .line-card { break-inside: avoid; border-color: #ccc; }
+        .variant { break-before: auto; }
+        .pgn-block { background: #f5f5f5; }
+        a { color: inherit; text-decoration: none; }
+        /* 列印時展開所有折疊內容，確保紙本可讀 */
+        .line-pgn .collapsed { display: none; }
+        .line-pgn .expanded { display: block !important; }
+        .line-board { display: block !important; }
+        .line-toggle { display: none; }
+        .cb-ctl, .cb-ar, .cb-match { display: none; }
+        .pgn-mv.cur { background: none; color: inherit; font-weight: inherit; }
+    }
+
+"""
+).joinToString("")
