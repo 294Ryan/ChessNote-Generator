@@ -8,7 +8,7 @@ env/
 build/
 dist/
 *.exe
-*.spec
+# *.spec
 
 *.json
 *.html
