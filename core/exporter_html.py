@@ -1,24 +1,17 @@
 import io
 import os
 import json
-import base64
 import chess
 import chess.pgn
 import chess.svg
 from jinja2 import Environment, FileSystemLoader
-from core.pgn_renderer import resolveImageBytes, resolvePgn
+from core.pgn_renderer import resolvePgn
 from core.i18n import t, getLanguage
 
-def buildImageDataUri(pgn, imagePath, orientation, noImage):    # 只用於手動上傳圖；自動生成圖改由 html 內的互動棋盤繪製
-    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage)
-    if rawBytes is None:
+def buildImageDataUri(imageData, noImage):    # 只用於手動上傳圖；自動生成圖改由 html 內的互動棋盤繪製
+    if noImage or not imageData:
         return None
-
-    ext = os.path.splitext(imagePath)[1].lstrip(".").lower()
-    mimeType = "jpeg" if ext in ("jpg", "jpeg") else ext
-
-    encoded = base64.b64encode(rawBytes).decode("ascii")
-    return f"data:image/{mimeType};base64,{encoded}"
+    return f"data:image/png;base64,{imageData}"
 
 
 def extractMoves(pgn, startingPgn=""):    # 回傳 (起始 FEN（標準開局為空字串）, UCI 著法清單)；PGN 無法解析回傳 None
@@ -45,6 +38,18 @@ def buildBoardJson(orientation, lines):
     return json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")    # 避免資料中出現 </script> 破壞頁面
 
 
+def buildProjectJson(opening):    # 內嵌在筆記裡的專案資料：格式同暫存檔，但不帶本機圖片路徑；之後可在編輯器開啟這份筆記繼續編輯
+    data = opening.toDict()
+    data["startingImagePath"] = None
+    for variant in data["variants"]:
+        for line in variant["lines"]:
+            line["imagePath"] = None
+        for sub in variant["subCategories"]:
+            for line in sub["lines"]:
+                line["imagePath"] = None
+    return json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")    # 避免資料中出現 </script> 提早結束區塊
+
+
 def buildContext(opening, templateDir):
     lines = []    # 全部 Line 的 [起始 FEN, 著法, 與起始 PGN 相同的手數, 是否需截斷顯示文字]
     starting = {"fen": "", "moves": []}
@@ -69,7 +74,7 @@ def buildContext(opening, templateDir):
     if startingIndex is not None:
         starting["fen"] = lines[0][0]
         starting["moves"] = lines[0][1].split()
-    hasStartingImage = opening.startingImagePath and not opening.startingNoImage
+    hasStartingImage = opening.startingImageData and not opening.startingNoImage
 
     context = {
         "name": opening.name,
@@ -85,8 +90,8 @@ def buildContext(opening, templateDir):
         "altLine": t("altLine"),
         "startingPgn": opening.startingPgn,
         "startingIndex": startingIndex,
-        "startingImage": buildImageDataUri(opening.startingPgn, opening.startingImagePath, opening.orientation, opening.startingNoImage) if hasStartingImage else None,
-        "startingBoard": startingIndex if not opening.startingNoImage and not opening.startingImagePath else None,
+        "startingImage": buildImageDataUri(opening.startingImageData, opening.startingNoImage) if hasStartingImage else None,
+        "startingBoard": startingIndex if not opening.startingNoImage and not opening.startingImageData else None,
         "variants": [],
     }
 
@@ -107,6 +112,7 @@ def buildContext(opening, templateDir):
 
     context["hasBoards"] = bool(lines)
     context["boardJson"] = buildBoardJson(opening.orientation, lines)
+    context["projectJson"] = buildProjectJson(opening)
     context["pieceDefs"] = buildPieceDefs()
     with open(os.path.join(templateDir, "board.js"), encoding="utf-8") as f:
         context["boardJs"] = f.read()
@@ -118,11 +124,11 @@ def buildLineContext(line, orientation, registerLine):
     pgn = line.pgn
     index = registerLine(pgn)    # 每條 Line 都登記，即使用了手動圖也要讓起始局面棋盤看得到它的分支
 
-    isAuto = not line.imagePath and not line.noImage
+    isAuto = not line.imageData and not line.noImage
     return {
         "pgn": pgn,
         "index": index,
-        "image": buildImageDataUri(pgn, line.imagePath, orientation, line.noImage) if line.imagePath else None,
+        "image": buildImageDataUri(line.imageData, line.noImage),
         "board": index if isAuto else None,
     }
 

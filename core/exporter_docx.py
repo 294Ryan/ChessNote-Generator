@@ -4,10 +4,11 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from core.pgn_renderer import resolveImageBytes
-from core.i18n import t
+from core.i18n import t, getLanguage
 
 BODY_FONT = "Cambria"    # 襯線字體，呼應 html 版的出版品質感（僅影響英數字元）
 BODY_FONT_CJK = "PMingLiU"    # 新細明體，中文字元搭配用，襯線風格與 Cambria 呼應
+CJK_FONTS = {"zh-CN": "SimSun", "ja": "MS Mincho", "ko": "Batang"}    # 中日韓文字的襯線字型隨語言切換，其餘語言用 BODY_FONT_CJK
 PGN_FONT = "Consolas"    # 等寬字體，讓棋步對齊更整齊
 LINE_SIZE = Pt(12)    # Line PGN 字級
 PGN_SIZE = LINE_SIZE
@@ -28,11 +29,12 @@ def setStyleEastAsiaFont(style, fontName):    # python-docx 的 font.name 只影
 
 
 def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
+    cjkFont = CJK_FONTS.get(getLanguage(), BODY_FONT_CJK)
     normalStyle = doc.styles["Normal"]
     normalStyle.font.name = BODY_FONT
     normalStyle.font.size = Pt(12.5)
     normalStyle.font.color.rgb = COLOR_BLACK
-    setStyleEastAsiaFont(normalStyle, BODY_FONT_CJK)
+    setStyleEastAsiaFont(normalStyle, cjkFont)
 
     headingSpecs = [
         ("Heading 1", 26, COLOR_BLACK),
@@ -46,7 +48,7 @@ def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
         headingStyle.font.bold = True
         headingStyle.font.italic = False
         headingStyle.font.color.rgb = color
-        setStyleEastAsiaFont(headingStyle, BODY_FONT_CJK)
+        setStyleEastAsiaFont(headingStyle, cjkFont)
 
     # Heading 1 的段前距離疊加頁面上邊界，導致標題離頁首過遠，歸零修正
     doc.styles["Heading 1"].paragraph_format.space_before = Pt(0)
@@ -90,8 +92,8 @@ def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 
     return paragraph
 
 
-def addImageIfExists(doc, pgn, imagePath, orientation, noImage, startingPgn=""):
-    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn, htmlStyle=True)    # 與 html 相同的棋盤樣式
+def addImageIfExists(doc, pgn, imageData, orientation, noImage, startingPgn=""):
+    rawBytes = resolveImageBytes(pgn, imageData, orientation, noImage, startingPgn, htmlStyle=True)    # 與 html 相同的棋盤樣式
     if rawBytes:
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 
@@ -106,7 +108,7 @@ def addDescriptionIfExists(doc, obj, color=None):    # 直接顯示說明正文�
 
 def addLineSection(doc, line, orientation, startingPgn):
     addPgnParagraph(doc, line.pgn)
-    addImageIfExists(doc, line.pgn, line.imagePath, orientation, line.noImage, startingPgn)
+    addImageIfExists(doc, line.pgn, line.imageData, orientation, line.noImage, startingPgn)
 
 
 def exportDocx(opening, outputPath):
@@ -120,7 +122,7 @@ def exportDocx(opening, outputPath):
 
     doc.add_heading(t("basePosition"), level=2)
     addPgnParagraph(doc, opening.startingPgn)
-    addImageIfExists(doc, opening.startingPgn, opening.startingImagePath, opening.orientation, opening.startingNoImage)
+    addImageIfExists(doc, opening.startingPgn, opening.startingImageData, opening.orientation, opening.startingNoImage)
 
     for variant in opening.variants:
         addHorizontalRule(doc)

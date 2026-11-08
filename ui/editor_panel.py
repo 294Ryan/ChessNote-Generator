@@ -153,7 +153,7 @@ class EditorPanel(QScrollArea):
         layout.addWidget(descEdit)
 
         layout.addWidget(QLabel(t("startingPgn")))
-        pgnEditor = PgnImageEditor(opening.startingPgn, opening.startingImagePath, opening.startingNoImage, opening.orientation, collapsible=False)
+        pgnEditor = PgnImageEditor(opening.startingPgn, opening.startingImagePath, opening.startingImageData, opening.startingNoImage, opening.orientation, collapsible=False)
         pgnEditor.changed.connect(lambda: self.updateStartingPgn(opening, pgnEditor))
         self.imageEditors.append(pgnEditor)
         layout.addWidget(pgnEditor)
@@ -189,7 +189,7 @@ class EditorPanel(QScrollArea):
         layout = frame.contentLayout
         layout.addWidget(self.makeHeading("LINE", COLOR_LINE, DragHandle(line.id, frame)))
 
-        pgnEditor = PgnImageEditor(line.pgn, line.imagePath, line.noImage, self.currentOrientation, collapsible=True, getStartingPgn=lambda: self.opening.startingPgn)
+        pgnEditor = PgnImageEditor(line.pgn, line.imagePath, line.imageData, line.noImage, self.currentOrientation, collapsible=True, getStartingPgn=lambda: self.opening.startingPgn)
         pgnEditor.changed.connect(lambda: self.updateLinePgn(line, pgnEditor))
         self.imageEditors.append(pgnEditor)
         layout.addWidget(pgnEditor)
@@ -268,6 +268,7 @@ class EditorPanel(QScrollArea):
     def updateStartingPgn(self, opening, pgnEditor):
         opening.startingPgn = pgnEditor.getPgn()
         opening.startingImagePath = pgnEditor.getImagePath()
+        opening.startingImageData = pgnEditor.getImageData()
         opening.startingNoImage = pgnEditor.getNoImage()
         for editor in self.imageEditors:
             if editor is not pgnEditor:
@@ -277,6 +278,7 @@ class EditorPanel(QScrollArea):
     def updateLinePgn(self, line, pgnEditor):
         line.pgn = pgnEditor.getPgn()
         line.imagePath = pgnEditor.getImagePath()
+        line.imageData = pgnEditor.getImageData()
         line.noImage = pgnEditor.getNoImage()
         self.onModelChanged()
 

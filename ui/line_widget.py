@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPlainTex
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from core.pgn_renderer import resolveImageBytes, checkPgn
+from core.image_utils import loadScaledBase64
 from ui.editor_style import INPUT_RADIUS
 from ui.theme import palette
 from core.i18n import t
@@ -13,10 +14,11 @@ PREVIEW_WIDTH = 280    # 預覽圖寬度（像素）
 class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀態：自動產生 / 手動上傳 / 刪除（空白）
     changed = pyqtSignal()
 
-    def __init__(self, pgn="", imagePath=None, noImage=False, orientation="white", collapsible=True, getStartingPgn=None):
+    def __init__(self, pgn="", imagePath=None, imageData=None, noImage=False, orientation="white", collapsible=True, getStartingPgn=None):
         super().__init__()
         self.getStartingPgn = getStartingPgn or (lambda: "")    # Line 取得起始 PGN，用來解析「接續寫法」；起始 PGN 本身不需要
-        self.imagePath = imagePath    # 手動上傳的圖片路徑，None 代表用自動生成圖
+        self.imagePath = imagePath    # 舊存檔遺留的本機圖片路徑，只原樣保留；使用者一動圖片就清掉
+        self.imageData = imageData    # 手動上傳圖的 base64，None 代表用自動生成圖
         self.noImage = noImage    # True 代表刻意不放圖片
         self.orientation = orientation    # 自動生成圖的棋盤視角 white / black
         self.collapsible = collapsible
@@ -80,7 +82,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
         self.refreshPreview()
 
     def isAutoImage(self):
-        return self.imagePath is None and not self.noImage
+        return self.imageData is None and not self.noImage
 
     def onFieldChanged(self):
         self.changed.emit()
@@ -97,19 +99,23 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
     def setAutoImage(self):    # 回到自動生成圖並展開
         self.imagePath = None
+        self.imageData = None
         self.noImage = False
         self.applyImageState(expand=True)
 
     def onUploadImage(self):
         path, _ = QFileDialog.getOpenFileName(self, t("pickImage"), "", "Images (*.png *.jpg *.jpeg)")
-        if path:
-            self.imagePath = path
+        data = loadScaledBase64(path) if path else None    # 不是圖片或讀不到就忽略
+        if data:
+            self.imagePath = None
+            self.imageData = data
             self.noImage = False
             self.applyImageState(expand=True)
 
     def onRightClicked(self):
         if self.isAutoImage():    # 刪除圖片
             self.imagePath = None
+            self.imageData = None
             self.noImage = True
             self.applyImageState(expand=False)
         else:    # 使用預設
@@ -131,6 +137,9 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
     def getImagePath(self):
         return self.imagePath
 
+    def getImageData(self):
+        return self.imageData
+
     def getNoImage(self):
         return self.noImage
 
@@ -144,7 +153,7 @@ class PgnImageEditor(QWidget):    # PGN 輸入 + 圖片預覽，圖片三種狀�
 
     def refreshPreview(self, expand=False):    # expand=True 或圖片剛出現時，自動展開預覽
         self.refreshPgnError()
-        rawBytes = resolveImageBytes(self.getPgn(), self.imagePath, self.orientation, self.noImage, self.getStartingPgn(), htmlStyle=True)    # 預覽用 html 棋盤的樣式
+        rawBytes = resolveImageBytes(self.getPgn(), self.imageData, self.orientation, self.noImage, self.getStartingPgn(), htmlStyle=True)    # 預覽用 html 棋盤的樣式
         pixmap = None
         if rawBytes:
             pixmap = QPixmap()

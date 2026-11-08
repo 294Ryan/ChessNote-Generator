@@ -1,5 +1,6 @@
 import io
 import re
+import base64
 import chess
 import chess.pgn
 import chess.svg
@@ -111,13 +112,12 @@ def savePngToFile(pngBytes, filePath):
         f.write(pngBytes)
 
 
-def resolveImageBytes(pgn, imagePath, orientation="white", noImage=False, startingPgn="", htmlStyle=False):
+def resolveImageBytes(pgn, imageData, orientation="white", noImage=False, startingPgn="", htmlStyle=False):
     if noImage:
         return None    # 使用者刻意刪除圖片
 
-    if imagePath:    # 有手動上傳圖則優先使用，直接讀取原始 bytes
-        with open(imagePath, "rb") as f:
-            return f.read()
+    if imageData:    # 有手動上傳圖則優先使用（base64 還原成原始 bytes）
+        return base64.b64decode(imageData)
 
     if not pgn.strip():
         return None    # 沒有 PGN 也沒有上傳圖，不顯示

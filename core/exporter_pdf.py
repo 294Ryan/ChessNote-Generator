@@ -20,8 +20,8 @@ def escapeText(text):
     return html.escape(text).replace("\n", "<br>")
 
 
-def buildImageTag(doc, pgn, imagePath, orientation, noImage, width, startingPgn=""):
-    rawBytes = resolveImageBytes(pgn, imagePath, orientation, noImage, startingPgn, htmlStyle=True)    # 與 html 相同的棋盤樣式
+def buildImageTag(doc, pgn, imageData, orientation, noImage, width, startingPgn=""):
+    rawBytes = resolveImageBytes(pgn, imageData, orientation, noImage, startingPgn, htmlStyle=True)    # 與 html 相同的棋盤樣式
     if rawBytes is None:
         return ""
 
@@ -49,7 +49,7 @@ def buildDescription(text):
 
 def buildLines(doc, lines, orientation, startingPgn):
     return "".join(
-        buildPgnBlock(l.pgn) + buildImageTag(doc, l.pgn, l.imagePath, orientation, l.noImage, IMAGE_WIDTH, startingPgn)
+        buildPgnBlock(l.pgn) + buildImageTag(doc, l.pgn, l.imageData, orientation, l.noImage, IMAGE_WIDTH, startingPgn)
         for l in lines
     )
 
@@ -63,7 +63,7 @@ def buildHtml(doc, opening):
         buildDescription(opening.description),
         '<h2 style="font-size:18pt;">{t("startingPosition")}</h2>',
         buildPgnBlock(opening.startingPgn),
-        buildImageTag(doc, opening.startingPgn, opening.startingImagePath, orientation, opening.startingNoImage, IMAGE_WIDTH),
+        buildImageTag(doc, opening.startingPgn, opening.startingImageData, orientation, opening.startingNoImage, IMAGE_WIDTH),
     ]
 
     for variant in opening.variants:

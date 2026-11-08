@@ -7,7 +7,7 @@ from PyQt5.QtGui import QKeySequence
 
 from core.models import Opening, moveItem
 from core.i18n import t, setLanguage, getLanguage, LANGUAGES
-from core.project_io import saveProject, loadProject
+from core.project_io import saveProject, loadProject, InvalidProjectFile, KIND_JSON, KIND_HTML
 from core.exporter_docx import exportDocx
 from core.exporter_html import exportHtml
 from core.exporter_pdf import exportPdf
@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
 
         self.opening = Opening()
         self.currentProjectPath = None
+        self.currentKind = None    # 目前檔案類型：json（暫存檔）、html（筆記）；尚未存檔的新內容為 None
         self.savedSnapshot = self.snapshot()    # 最後一次存檔（或開啟）時的內容，用來判斷有沒有未存的修改
 
         self.treePanel = TreePanel()
@@ -206,21 +207,29 @@ class MainWindow(QMainWindow):
         name = os.path.basename(self.currentProjectPath) if self.currentProjectPath else t("untitledProject")
         self.setWindowTitle(f"{'*' if self.isDirty() else ''}{name} - Chess Opening Note Generator")
 
-    def saveTo(self, path):
-        saveProject(self.opening, path)
+    def saveTo(self, path, kind):    # kind 為 json（暫存檔）或 html（筆記，重新產生並覆寫）；失敗時提示並回傳 False
+        try:
+            if kind == KIND_HTML:
+                exportHtml(self.opening, path)
+            else:
+                saveProject(self.opening, path)
+        except Exception as e:
+            showInfo(self, t("menuSaveProject"), t("saveFailed") + str(e))
+            return False
         self.currentProjectPath = path
+        self.currentKind = kind
         self.savedSnapshot = self.snapshot()
         self.updateTitle()
         return True
 
-    def doSave(self):    # 不再確認：已有路徑直接存，否則選位置；回傳 True 代表真的存了
+    def doSave(self):    # 不再確認：已有路徑就依目前檔案類型寫回，否則選位置；回傳 True 代表真的存了
         if self.currentProjectPath:
-            return self.saveTo(self.currentProjectPath)
+            return self.saveTo(self.currentProjectPath, self.currentKind)
         return self.chooseSavePath()
 
-    def chooseSavePath(self):
+    def chooseSavePath(self):    # 另存一律是暫存檔（.json）
         path, _ = QFileDialog.getSaveFileName(self, t("menuSaveAsProject"), "", "JSON Files (*.json)")
-        return self.saveTo(path) if path else False
+        return self.saveTo(path, KIND_JSON) if path else False
 
     def onSaveProject(self):    # 選單 / Ctrl+S：先確認再存；未命名專案沒有檔案可覆蓋，直接走另存
         if not self.currentProjectPath:
@@ -253,12 +262,22 @@ class MainWindow(QMainWindow):
     def onOpenProject(self):
         if not self.confirmDiscardChanges("unsavedOpening"):
             return
-        path, _ = QFileDialog.getOpenFileName(self, t("menuOpenProject"), "", "JSON Files (*.json)")
-        if path:
-            self.opening = loadProject(path)
-            self.currentProjectPath = path
-            self.savedSnapshot = self.snapshot()
-            self.refreshUI()
+        path, _ = QFileDialog.getOpenFileName(self, t("menuOpenProject"), "", "Notes and Drafts (*.html *.json)")
+        if not path:
+            return
+        try:
+            opening, kind = loadProject(path)    # 先驗證；不合格就不動目前的內容
+        except InvalidProjectFile:
+            showInfo(self, t("menuOpenProject"), t("invalidFile"))
+            return
+        except Exception as e:
+            showInfo(self, t("menuOpenProject"), t("openFailed") + str(e))
+            return
+        self.opening = opening
+        self.currentProjectPath = path
+        self.currentKind = kind
+        self.savedSnapshot = self.snapshot()
+        self.refreshUI()
 
     ### 匯出 ###
     def onExportDocx(self):

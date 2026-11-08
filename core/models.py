@@ -14,23 +14,27 @@ def moveItem(items, itemId, insertIndex):    # 把 itemId 移到 insertIndex 之
 
 
 class Line:
-    def __init__(self, pgn="", imagePath=None, noImage=False):
+    def __init__(self, pgn="", imagePath=None, noImage=False, imageData=None):
         self.id = newId()
         self.pgn = pgn
-        self.imagePath = imagePath    # None 代表用自動生成圖，否則為手動上傳覆蓋的路徑
+        self.imagePath = imagePath    # 舊存檔遺留的本機圖片路徑，只原樣保留不再使用；新上傳的圖一律存 imageData
         self.noImage = noImage    # True 代表刻意不放圖片
+        self.imageData = imageData    # 手動上傳圖的 base64（PNG），None 代表用自動生成圖
 
     def toDict(self):
-        return {
+        data = {
             "id": self.id,
             "pgn": self.pgn,
             "imagePath": self.imagePath,
             "noImage": self.noImage,
         }
+        if self.imageData is not None:
+            data["imageData"] = self.imageData
+        return data
 
     @staticmethod
     def fromDict(data):
-        line = Line(data["pgn"], data.get("imagePath"), data.get("noImage", False))    # 舊存檔的 name / description 直接忽略
+        line = Line(data["pgn"], data.get("imagePath"), data.get("noImage", False), data.get("imageData"))    # 舊存檔的 name / description 直接忽略
         line.id = data["id"]
         return line
 
@@ -104,7 +108,8 @@ class Opening:
         self.name = name
         self.description = description
         self.startingPgn = startingPgn
-        self.startingImagePath = None    # None 代表用自動生成圖
+        self.startingImagePath = None    # 舊存檔遺留的本機圖片路徑，只原樣保留不再使用
+        self.startingImageData = None    # 手動上傳圖的 base64（PNG），None 代表用自動生成圖
         self.startingNoImage = False    # True 代表起始局面刻意不放圖片
         self.orientation = "white"    # 自動生成圖的棋盤視角 white / black
         self.variants = []
@@ -116,7 +121,7 @@ class Opening:
 
     ### 序列化／反序列化，供 JSON 存檔使用 ###
     def toDict(self):
-        return {
+        data = {
             "name": self.name,
             "description": self.description,
             "startingPgn": self.startingPgn,
@@ -125,11 +130,15 @@ class Opening:
             "orientation": self.orientation,
             "variants": [v.toDict() for v in self.variants],
         }
+        if self.startingImageData is not None:
+            data["startingImageData"] = self.startingImageData
+        return data
 
     @staticmethod
     def fromDict(data):
         opening = Opening(data["name"], data["description"], data["startingPgn"])
         opening.startingImagePath = data.get("startingImagePath")
+        opening.startingImageData = data.get("startingImageData")
         opening.startingNoImage = data.get("startingNoImage", False)
         opening.orientation = data.get("orientation", "white")
         opening.variants = [Variant.fromDict(v) for v in data["variants"]]
