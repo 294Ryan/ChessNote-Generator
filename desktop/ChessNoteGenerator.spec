@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_data_files
 
-datas = [('templates', 'templates'), ('assets/fonts/NotoSansTC-Regular.ttf', 'assets/fonts')]
+datas = [('templates', 'templates'), ('assets/fonts/NotoSansTC-Regular.ttf', 'assets/fonts'), ('assets/icons/window_icon.ico', 'assets/icons')]
 datas += collect_data_files('docx')
 
 
