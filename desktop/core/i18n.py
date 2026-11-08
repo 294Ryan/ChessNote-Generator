@@ -1,5 +1,5 @@
-# 多語言：所有介面與匯出檔的固定文字集中於此。新增語言只需在 LANGUAGES 與 TEXTS 各加一筆
-LANGUAGES = [    # (語言代碼, 選單顯示名稱)
+# i18n: all fixed UI and export text lives here; a new language needs one entry each in LANGUAGES and TEXTS
+LANGUAGES = [    # (language code, menu display name)
     ("zh-TW", "繁體中文"),
     ("zh-CN", "简体中文"),
     ("en", "English"),
@@ -34,7 +34,7 @@ TEXTS = {
         "startingPosition": "起始局面", "basePosition": "基本局面",
         "expand": "展開 ▾", "collapse": "收合 ▴", "altStarting": "起始局面棋盤圖", "altLine": "Line 棋盤圖",
         "boardViewAll": "檢視全部（共 {n} 個）▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "另存暫存檔 (.json)",
         "saveMessage": "確定要儲存目前的修改嗎？檔案 {file} 會被直接覆蓋。",
         "saveAsMessage": "將以目前的內容建立一個新的暫存檔，接著請選擇儲存位置。",
@@ -73,7 +73,7 @@ TEXTS = {
         "startingPosition": "起始局面", "basePosition": "基本局面",
         "expand": "展开 ▾", "collapse": "收起 ▴", "altStarting": "起始局面棋盘图", "altLine": "Line 棋盘图",
         "boardViewAll": "查看全部（共 {n} 个）▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "另存为暂存文件 (.json)",
         "saveMessage": "确定要保存当前的修改吗？文件 {file} 将被直接覆盖。",
         "saveAsMessage": "将以当前内容创建一个新的暂存文件，接着请选择保存位置。",
@@ -112,7 +112,7 @@ TEXTS = {
         "startingPosition": "Starting Position", "basePosition": "Starting Position",
         "expand": "Expand ▾", "collapse": "Collapse ▴", "altStarting": "Starting position board", "altLine": "Line board",
         "boardViewAll": "View all ({n}) ▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "Save as draft file (.json)",
         "saveMessage": "Save your changes now? The file {file} will be overwritten.",
         "saveAsMessage": "A new draft file (.json) will be created from the current content. You will then choose where to save it.",
@@ -151,7 +151,7 @@ TEXTS = {
         "startingPosition": "開始局面", "basePosition": "開始局面",
         "expand": "展開 ▾", "collapse": "折りたたむ ▴", "altStarting": "開始局面の盤面図", "altLine": "Line の盤面図",
         "boardViewAll": "すべて表示（{n} 件）▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "下書きファイルとして保存 (.json)",
         "saveMessage": "現在の変更を保存しますか？ファイル {file} は上書きされます。",
         "saveAsMessage": "現在の内容から新しい下書きファイルを作成します。続けて保存先を選択してください。",
@@ -190,7 +190,7 @@ TEXTS = {
         "startingPosition": "시작 포지션", "basePosition": "시작 포지션",
         "expand": "펼치기 ▾", "collapse": "접기 ▴", "altStarting": "시작 포지션 보드 이미지", "altLine": "Line 보드 이미지",
         "boardViewAll": "전체 보기 ({n}개) ▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "임시 파일로 저장 (.json)",
         "saveMessage": "현재 변경 사항을 저장할까요? {file} 파일을 덮어씁니다.",
         "saveAsMessage": "현재 내용으로 새 임시 파일을 만듭니다. 이어서 저장 위치를 선택하세요.",
@@ -229,7 +229,7 @@ TEXTS = {
         "startingPosition": "Posición inicial", "basePosition": "Posición inicial",
         "expand": "Expandir ▾", "collapse": "Contraer ▴", "altStarting": "Tablero de la posición inicial", "altLine": "Tablero de la Line",
         "boardViewAll": "Ver todas ({n}) ▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "Guardar como borrador (.json)",
         "saveMessage": "¿Guardar los cambios actuales? El archivo {file} se sobrescribirá.",
         "saveAsMessage": "Se creará un nuevo archivo de borrador con el contenido actual. A continuación, elige dónde guardarlo.",
@@ -268,7 +268,7 @@ TEXTS = {
         "startingPosition": "Начальная позиция", "basePosition": "Начальная позиция",
         "expand": "Развернуть ▾", "collapse": "Свернуть ▴", "altStarting": "Доска начальной позиции", "altLine": "Доска Line",
         "boardViewAll": "Показать все ({n}) ▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "Сохранить как черновик (.json)",
         "saveMessage": "Сохранить текущие изменения? Файл {file} будет перезаписан.",
         "saveAsMessage": "На основе текущего содержимого будет создан новый файл черновика. Затем выберите место сохранения.",
@@ -307,7 +307,7 @@ TEXTS = {
         "startingPosition": "Ausgangsstellung", "basePosition": "Ausgangsstellung",
         "expand": "Aufklappen ▾", "collapse": "Zuklappen ▴", "altStarting": "Brett der Ausgangsstellung", "altLine": "Brett der Line",
         "boardViewAll": "Alle anzeigen ({n}) ▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "Als Entwurf speichern (.json)",
         "saveMessage": "Aktuelle Änderungen speichern? Die Datei {file} wird überschrieben.",
         "saveAsMessage": "Aus dem aktuellen Inhalt wird eine neue Entwurfsdatei erstellt. Wählen Sie anschließend den Speicherort.",
@@ -346,7 +346,7 @@ TEXTS = {
         "startingPosition": "Position initiale", "basePosition": "Position initiale",
         "expand": "Développer ▾", "collapse": "Réduire ▴", "altStarting": "Échiquier de la position initiale", "altLine": "Échiquier de la Line",
         "boardViewAll": "Tout afficher ({n}) ▾",
-        # 儲存確認 / 未存檔提示 / PGN 錯誤提示
+        ### Save confirmation / unsaved warning / PGN errors ###
         "menuSaveAsProject": "Enregistrer comme brouillon (.json)",
         "saveMessage": "Enregistrer les modifications actuelles ? Le fichier {file} sera écrasé.",
         "saveAsMessage": "Un nouveau fichier brouillon sera créé à partir du contenu actuel. Choisissez ensuite l’emplacement.",
@@ -378,13 +378,13 @@ def getLanguage():
 
 
 def t(key, **kwargs):
-    text = TEXTS[currentLanguage].get(key) or TEXTS["en"][key]    # 缺字時退回英文
+    text = TEXTS[currentLanguage].get(key) or TEXTS["en"][key]    # Fall back to English when a key is missing
     return text.format(**kwargs) if kwargs else text
 
 
-def detectSystemLanguage():    # 依系統語言挑選，找不到對應語言就用英文
+def detectSystemLanguage():    # Pick by system language; fall back to English
     from PyQt5.QtCore import QLocale
-    name = QLocale.system().name()    # 例如 zh_TW、ja_JP
+    name = QLocale.system().name()    # e.g. zh_TW, ja_JP
     prefix = name.split("_")[0]
     if prefix == "zh":
         return "zh-CN" if name in ("zh_CN", "zh_SG") else "zh-TW"

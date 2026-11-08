@@ -1,17 +1,17 @@
-# 編輯區的集中樣式：色票在 ui/theme.py，這裡只負責把色票組成 QSS
+# Centralized editor styles: palette lives in ui/theme.py, this module only builds QSS from it
 from ui.theme import palette, scrollbarStyle
 
-CARD_RADIUS = 8    # 卡片圓角（像素）
-INPUT_RADIUS = 6    # 輸入框與按鈕圓角（像素）
+CARD_RADIUS = 8
+INPUT_RADIUS = 6
 MONO_FONT = "Consolas, 'Courier New', monospace"
 
 
-def tint(hexColor, alpha):    # #rrggbb 轉成帶透明度的 rgba
+def tint(hexColor, alpha):    # Convert #rrggbb to rgba with alpha
     r, g, b = (int(hexColor[i:i + 2], 16) for i in (1, 3, 5))
     return f"rgba({r}, {g}, {b}, {alpha})"
 
 
-def editorStyle():    # 編輯區最外層：頁面底色與捲軸
+def editorStyle():    # Outermost editor area: page background and scrollbar
     p = palette()
     return f"""
 QScrollArea {{ background: {p.pageBg}; border: none; }}
@@ -19,7 +19,7 @@ QScrollArea {{ background: {p.pageBg}; border: none; }}
 """ + scrollbarStyle()
 
 
-def cardStyle(accent):    # 卡片內容區的樣式，accent 為該卡片主色（聚焦框與滑過色）
+def cardStyle(accent):    # Card content style; accent is the card's main color (focus border and hover)
     p = palette()
     return f"""
 #card {{

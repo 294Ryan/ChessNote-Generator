@@ -1,51 +1,45 @@
+### Python ###
 __pycache__/
 *.py[cod]
-*.pyc
-
 .venv/
 venv/
 env/
+.pytest_cache/
 
+### Build output ###
 build/
 dist/
 *.exe
-# *.spec
+*.apk
+*.aab
+*.ap_
+*.dex
+.gradle/
+.externalNativeBuild/
+.cxx/
+captures/
 
+### Signing and local config ###
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+### Generated user files (notes, drafts, exports, archives) ###
 *.json
 *.html
 *.docx
 *.pdf
 *.zip
-
-.vscode/
-.idea/
-
-Thumbs.db
-Desktop.ini
-.DS_Store
-
 *.log
-.pytest_cache/
 
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
+### Files that must stay tracked despite the rules above ###
+!android/app/src/main/assets/pieces.json
 
-local.properties
-
+### IDE and OS ###
+.vscode/
 .idea/
 *.iml
 .DS_Store
 Thumbs.db
-
-*.apk
-*.aab
-*.ap_
-*.dex
-captures/
-.externalNativeBuild/
-.cxx/
-
-*.jks
-*.keystore
-keystore.properties
+Desktop.ini

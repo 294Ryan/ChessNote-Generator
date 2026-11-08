@@ -49,9 +49,8 @@ private fun GlobeIcon(color: Color) {
     }
 }
 
-// 第一次啟動才會出現：app 圖示 + 標語 + 選語言 + 開始使用
 @Composable
-fun WelcomeScreen(onLanguage: () -> Unit, onStart: () -> Unit) {
+fun WelcomeScreen(onLanguage: () -> Unit, onStart: () -> Unit) {    // Shown on first launch only: app icon + tagline + language picker + start button
     val p = LocalPalette.current
     val languageName = Texts.languages.firstOrNull { it.first == I18n.lang }?.second ?: "English"
     Column(Modifier.fillMaxSize().background(p.pageBg).padding(start = 24.dp, end = 24.dp, bottom = 36.dp)) {
@@ -63,7 +62,7 @@ fun WelcomeScreen(onLanguage: () -> Unit, onStart: () -> Unit) {
             Spacer(Modifier.height(32.dp))
             Text(
                 S.appName,
-                modifier = Modifier.fillMaxWidth(),    // 撐滿寬度，換行時每一行才會置中
+                modifier = Modifier.fillMaxWidth(),    // Fill the width so each wrapped line stays centered
                 textAlign = TextAlign.Center,
                 fontFamily = FontFamily.Serif,
                 fontSize = 36.sp,

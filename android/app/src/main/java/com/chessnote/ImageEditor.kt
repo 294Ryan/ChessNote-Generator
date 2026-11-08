@@ -54,21 +54,20 @@ import java.io.ByteArrayOutputStream
 class Preview(val bitmap: Bitmap?, val error: PgnError?)
 
 private fun buildPreview(pgn: String, startingPgn: String, imageData: String?, noImage: Boolean, orientation: String, boardSvg: BoardSvg): Preview {
-    val result = if (pgn.isBlank()) null else PgnService.play(resolvePgn(pgn, startingPgn))    // 接續寫法要先接上起始 PGN
+    val result = if (pgn.isBlank()) null else PgnService.play(resolvePgn(pgn, startingPgn))    // Continuation form must be joined with the starting PGN first
     val bitmap = when {
-        noImage -> null    // 使用者刻意刪除圖片
+        noImage -> null
         imageData != null -> {
             val bytes = Base64.decode(imageData, Base64.DEFAULT)
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         }
-        result != null -> boardSvg.render(result.board, orientation, 600, result.lastMove)    // 桌面版上傳圖的路徑手機讀不到，一律退回自動生成圖
+        result != null -> boardSvg.render(result.board, orientation, 600, result.lastMove)    // Desktop upload paths are unreadable on mobile; always fall back to the auto-generated image
         else -> null
     }
     return Preview(bitmap, result?.error)
 }
 
-// 上傳的圖縮到最長邊 1200px 再轉 base64，避免 .json 過大
-fun loadScaledBase64(context: Context, uri: Uri, maxSide: Int = 1200): String? {
+fun loadScaledBase64(context: Context, uri: Uri, maxSide: Int = 1200): String? {    // Uploads are shrunk to a 1200px longest side then base64'd to keep .json small
     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
@@ -99,13 +98,12 @@ private fun SmallButton(text: String, onClick: () -> Unit) {
     ) { Text(text, fontSize = 12.sp) }
 }
 
-// PGN 輸入 + 圖片預覽，圖片三種狀態：自動生成 / 手動上傳 / 刪除（空白）
 @Composable
-fun PgnImageEditor(
+fun PgnImageEditor(    // PGN input + image preview; image has three states: auto-generated / uploaded / deleted (blank)
     label: String,
     accent: Color,
     pgn: String,
-    startingPgn: String,    // Line 用來解析接續寫法；起始局面本身傳空字串
+    startingPgn: String,    // Used by Lines to resolve continuation form; pass an empty string for the starting position
     imageData: String?,
     noImage: Boolean,
     isAuto: Boolean,
@@ -131,7 +129,7 @@ fun PgnImageEditor(
         }
     }
     val preview by produceState<Preview?>(null, text, startingPgn, imageData, noImage, orientation) {
-        delay(300)    // 輸入停頓 300ms 才重繪，跟桌面版一致
+        delay(300)    // Redraw only after a 300ms typing pause, same as desktop
         value = withContext(Dispatchers.Default) { buildPreview(text, startingPgn, imageData, noImage, orientation, boardSvg) }
     }
 
@@ -144,7 +142,7 @@ fun PgnImageEditor(
             },
             label = { Text(label) },
             placeholder = { Text(S.pgnPlaceholder, color = p.inkFaint) },
-            isError = preview?.error != null,    // 與桌面版一致：PGN 有誤時邊框變紅
+            isError = preview?.error != null,
             minLines = 3,
             textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
             shape = RoundedCornerShape(6.dp),

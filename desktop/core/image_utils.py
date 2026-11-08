@@ -2,10 +2,10 @@ import base64
 from PyQt5.QtGui import QImage, QImageReader
 from PyQt5.QtCore import Qt, QByteArray, QBuffer, QIODevice
 
-MAX_SIDE = 1200    # 上傳圖縮到最長邊 1200px，避免存檔過大
+MAX_SIDE = 1200    # Uploads are shrunk to a 1200px longest side to keep saves small
 
 
-def loadScaledBase64(filePath):    # 讀圖並縮放後轉成 PNG 的 base64；讀不到或不是圖片回傳 None
+def loadScaledBase64(filePath):    # Read, resize, and return PNG as base64; None if unreadable or not an image
     image = QImage(filePath)
     if image.isNull():
         return None
@@ -19,7 +19,7 @@ def loadScaledBase64(filePath):    # 讀圖並縮放後轉成 PNG 的 base64；�
     return base64.b64encode(bytes(data)).decode("ascii")
 
 
-def imageSize(base64Text):    # 回傳 (寬, 高)；不是可解碼的圖片回傳 None；只讀檔頭，不會把整張圖解碼進記憶體
+def imageSize(base64Text):    # Returns (width, height); None if not a decodable image; reads only the header, never decodes the whole image
     try:
         raw = base64.b64decode(base64Text)
     except ValueError:

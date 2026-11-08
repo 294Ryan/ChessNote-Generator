@@ -1,4 +1,4 @@
-# 主題色票與視窗層級樣式（選單列、分隔線、tooltip）。切換主題只要改 setTheme，各處重建後即套用新色票
+# Theme palette and window-level styles; call setTheme, then rebuild widgets to apply the new palette
 from types import SimpleNamespace
 
 LIGHT = SimpleNamespace(
@@ -9,9 +9,9 @@ LIGHT = SimpleNamespace(
     scrollHandle="#d6ccb6", scrollHandleHover="#b9ad92", radioBorder="#b9ae98",
     treeBg="#ffffff",
     menuBg="#f3efe4", menuBorder="#ddd3bf", popupBg="#ffffff",
-    hoverBg="rgba(122, 46, 46, 0.10)",    # 選單項目滑過底色
+    hoverBg="rgba(122, 46, 46, 0.10)",    # Menu item hover background
     danger="#b91c1c",
-    chipAlpha=0.10, chipHoverAlpha=0.20,    # 左側樹節點底色與滑過底色的透明度
+    chipAlpha=0.10, chipHoverAlpha=0.20,    # Opacity of tree node background and its hover state
 )
 
 DARK = SimpleNamespace(
@@ -43,7 +43,7 @@ def setTheme(name):
     _current = DARK if name == "dark" else LIGHT
 
 
-def scrollbarStyle():    # 編輯區與左側樹共用的細捲軸
+def scrollbarStyle():    # Thin scrollbar shared by the editor and the tree
     p = _current
     return f"""
 QScrollBar:vertical {{ width: 10px; background: transparent; margin: 2px; }}
@@ -57,7 +57,7 @@ QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 """
 
 
-def windowStyle():    # 主視窗層級：背景、選單列、下拉選單、分隔線、tooltip、主題切換鈕
+def windowStyle():    # Window-level styles: background, menu bar, dropdowns, separators, tooltips, theme button
     p = _current
     return f"""
 QMainWindow {{ background: {p.pageBg}; }}

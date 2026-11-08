@@ -25,8 +25,8 @@ class MainWindow(QMainWindow):
 
         self.opening = Opening()
         self.currentProjectPath = None
-        self.currentKind = None    # 目前檔案類型：json（暫存檔）、html（筆記）；尚未存檔的新內容為 None
-        self.savedSnapshot = self.snapshot()    # 最後一次存檔（或開啟）時的內容，用來判斷有沒有未存的修改
+        self.currentKind = None    # Current file kind: json (draft) or html (note); None for new unsaved content
+        self.savedSnapshot = self.snapshot()    # Content at last save/open, used to detect unsaved changes
 
         self.treePanel = TreePanel()
         self.editorPanel = EditorPanel(self.onModelChanged, self.refreshUI)
@@ -34,7 +34,7 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.treePanel)
         splitter.addWidget(self.editorPanel)
-        splitter.setStretchFactor(1, 1)    # 右側編輯區優先佔用空間
+        splitter.setStretchFactor(1, 1)
         self.setCentralWidget(splitter)
 
         self.buildMenu()
@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
         self.refreshUI()
 
     def buildMenu(self):
-        self.fileMenu = self.menuBar().addMenu("")    # 文字由 retranslateMenu 依語言設定
+        self.fileMenu = self.menuBar().addMenu("")    # Text is set by retranslateMenu per language
         self.openAction = self.fileMenu.addAction("", self.onOpenProject)
         self.saveAction = self.fileMenu.addAction("", self.onSaveProject)
         self.saveAsAction = self.fileMenu.addAction("", self.onSaveProjectAs)
@@ -58,22 +58,22 @@ class MainWindow(QMainWindow):
 
         self.languageMenu = self.menuBar().addMenu("")
         self.languageActions = {}
-        languageGroup = QActionGroup(self)    # 互斥，選單內只會有一個打勾
+        languageGroup = QActionGroup(self)
         for code, name in LANGUAGES:
-            action = self.languageMenu.addAction(name)    # 語言名稱一律用該語言自己的寫法
+            action = self.languageMenu.addAction(name)    # Language names are shown in their own language
             action.setCheckable(True)
             action.setActionGroup(languageGroup)
             action.triggered.connect(lambda checked, c=code: self.onLanguageSelected(c))
             self.languageActions[code] = action
         self.retranslateMenu()
 
-        self.themeButton = QToolButton()    # 選單列右側的主題切換鈕
+        self.themeButton = QToolButton()
         self.themeButton.setObjectName("themeToggle")
         self.themeButton.setCursor(Qt.PointingHandCursor)
         self.themeButton.clicked.connect(self.onToggleTheme)
         self.menuBar().setCornerWidget(self.themeButton, Qt.TopRightCorner)
 
-    ### 語言 ###
+    ### Language ###
     def retranslateMenu(self):
         self.fileMenu.setTitle(t("menuFile"))
         self.openAction.setText(t("menuOpenProject"))
@@ -83,25 +83,25 @@ class MainWindow(QMainWindow):
         for ext, action in self.exportActions.items():
             action.setText(t("exportAs", ext=ext))
         title = t("menuLanguage")
-        self.languageMenu.setTitle(title if getLanguage() == "en" else f"{title} / Language")    # 附英文，方便看不懂當前語言的人找到
+        self.languageMenu.setTitle(title if getLanguage() == "en" else f"{title} / Language")    # English added so users who can't read the current language can find it
         self.languageActions[getLanguage()].setChecked(True)
-        self.updateTitle()    # 「未命名專案」也要跟著語言換
+        self.updateTitle()    # 'Untitled project' also follows the language
 
     def onLanguageSelected(self, code):
         setLanguage(code)
         self.retranslateMenu()
-        self.applyTheme()    # 主題鈕文字也要換語言
+        self.applyTheme()
         scrollBar = self.editorPanel.verticalScrollBar()
         scrollValue = scrollBar.value()
-        self.refreshUI()    # 重建兩側，標籤與提示文字才會換語言
+        self.refreshUI()    # Rebuild both sides so labels and tooltips change language
         QTimer.singleShot(0, lambda: scrollBar.setValue(scrollValue))
 
-    ### 主題 ###
+    ### Theme ###
     def applyTheme(self):
         self.setStyleSheet(windowStyle())
         self.treePanel.applyTheme()
         self.editorPanel.applyTheme()
-        self.themeButton.setText(t("themeLight") if isDark() else t("themeDark"))    # 顯示點擊後會切換成的主題
+        self.themeButton.setText(t("themeLight") if isDark() else t("themeDark"))    # Shows the theme it will switch to when clicked
         self.themeButton.setToolTip(t("themeToLight") if isDark() else t("themeToDark"))
 
     def onToggleTheme(self):
@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
         self.applyTheme()
         scrollBar = self.editorPanel.verticalScrollBar()
         scrollValue = scrollBar.value()
-        self.refreshUI()    # 重建兩側，節點與卡片才會吃到新色票
+        self.refreshUI()    # Rebuild both sides so nodes and cards pick up the new palette
         QTimer.singleShot(0, lambda: scrollBar.setValue(scrollValue))
 
     def connectSignals(self):
@@ -120,16 +120,16 @@ class MainWindow(QMainWindow):
         self.treePanel.deleteRequested.connect(self.onDeleteNode)
         self.treePanel.reorderRequested.connect(self.onReorder)
 
-    def refreshUI(self):    # 結構變動（新增/刪除/存讀檔）後重建左右兩側
+    def refreshUI(self):    # Rebuild both sides after structural changes (add/delete/save/load)
         self.treePanel.rebuild(self.opening)
         self.editorPanel.rebuild(self.opening)
         self.updateTitle()
 
-    def onModelChanged(self):    # 欄位文字變動時，只刷新樹狀標籤，避免編輯區失焦
+    def onModelChanged(self):    # On field text changes refresh only the tree labels, so the editor keeps focus
         self.treePanel.rebuild(self.opening)
         self.updateTitle()
 
-    ### 新增節點 ###
+    ### Add node ###
     def onAddVariant(self):
         self.opening.addVariant()
         self.refreshUI()
@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
             parent.addLine()
             self.refreshUI()
 
-    ### 刪除節點 ###
+    ### Delete node ###
     def onDeleteNode(self, nodeType, nodeId):
         if not showConfirm(self, t("deleteTitle"), t("deleteMessage"), t("deleteConfirm"), danger=True):
             return
@@ -164,8 +164,8 @@ class MainWindow(QMainWindow):
 
         self.refreshUI()
 
-    ### 左側樹拖曳調序 ###
-    def allSiblingLists(self):    # 所有「可互相調序」的 list
+    ### Tree drag reorder ###
+    def allSiblingLists(self):    # Every list whose items can be reordered
         yield self.opening.variants
         for variant in self.opening.variants:
             yield variant.lines
@@ -176,13 +176,13 @@ class MainWindow(QMainWindow):
     def onReorder(self, draggedId, targetId, insertAfter):
         for siblings in self.allSiblingLists():
             ids = [n.id for n in siblings]
-            if draggedId in ids and targetId in ids:    # 兩者必須在同一個 list，否則是跨層級，忽略
+            if draggedId in ids and targetId in ids:    # Both must be in the same list; otherwise it crosses levels, so ignore
                 targetIndex = ids.index(targetId) + (1 if insertAfter else 0)
                 if moveItem(siblings, draggedId, targetIndex):
                     self.refreshUI()
                 return
 
-    ### 查找節點 ###
+    ### Find node ###
     def findVariant(self, variantId):
         for variant in self.opening.variants:
             if variant.id == variantId:
@@ -196,18 +196,18 @@ class MainWindow(QMainWindow):
                     return sub
         return None
 
-    ### 存檔 / 載入 ###
+    ### Save / Load ###
     def snapshot(self):
         return json.dumps(self.opening.toDict(), sort_keys=True)
 
-    def isDirty(self):    # 以內容快照比對，切換主題與語言不會被當成修改
+    def isDirty(self):    # Compare content snapshots so theme/language changes don't count as edits
         return self.snapshot() != self.savedSnapshot
 
-    def updateTitle(self):    # 有未存修改時標題前加 *
+    def updateTitle(self):
         name = os.path.basename(self.currentProjectPath) if self.currentProjectPath else t("untitledProject")
         self.setWindowTitle(f"{'*' if self.isDirty() else ''}{name} - ChessNote Generator")
 
-    def saveTo(self, path, kind):    # kind 為 json（暫存檔）或 html（筆記，重新產生並覆寫）；失敗時提示並回傳 False
+    def saveTo(self, path, kind):    # kind is json (draft) or html (note, regenerated and overwritten); on failure show a message and return False
         try:
             if kind == KIND_HTML:
                 exportHtml(self.opening, path)
@@ -222,16 +222,16 @@ class MainWindow(QMainWindow):
         self.updateTitle()
         return True
 
-    def doSave(self):    # 不再確認：已有路徑就依目前檔案類型寫回，否則選位置；回傳 True 代表真的存了
+    def doSave(self):    # No confirmation: write back by current file kind if a path exists, else ask for a location; True if actually saved
         if self.currentProjectPath:
             return self.saveTo(self.currentProjectPath, self.currentKind)
         return self.chooseSavePath()
 
-    def chooseSavePath(self):    # 另存一律是暫存檔（.json）
+    def chooseSavePath(self):    # Save As always writes a draft (.json)
         path, _ = QFileDialog.getSaveFileName(self, t("menuSaveAsProject"), "", "JSON Files (*.json)")
         return self.saveTo(path, KIND_JSON) if path else False
 
-    def onSaveProject(self):    # 選單 / Ctrl+S：先確認再存；未命名專案沒有檔案可覆蓋，直接走另存
+    def onSaveProject(self):    # Menu / Ctrl+S: confirm then save; an untitled project has no file to overwrite, so go to Save As
         if not self.currentProjectPath:
             return self.onSaveProjectAs()
         message = t("saveMessage", file=os.path.basename(self.currentProjectPath))
@@ -245,12 +245,12 @@ class MainWindow(QMainWindow):
             return False
         return self.chooseSavePath()
 
-    def confirmDiscardChanges(self, messageKey):    # 有未存修改時詢問；messageKey 為 unsavedClosing / unsavedOpening；回傳 True 代表可以繼續
+    def confirmDiscardChanges(self, messageKey):    # Ask when there are unsaved changes; messageKey is unsavedClosing / unsavedOpening; True means continue
         if not self.isDirty():
             return True
         choice = showSaveChoice(self, t("unsavedTitle"), t(messageKey), t("save"), t("discard"))
         if choice == "save":
-            return self.doSave()    # 使用者已選擇要存，不再跳第二次確認；選位置被取消時回傳 False
+            return self.doSave()    # User already chose to save, so no second confirmation; False if the location picker is cancelled
         return choice == "discard"
 
     def closeEvent(self, event):
@@ -266,7 +266,7 @@ class MainWindow(QMainWindow):
         if not path:
             return
         try:
-            opening, kind = loadProject(path)    # 先驗證；不合格就不動目前的內容
+            opening, kind = loadProject(path)    # Validate first; don't touch the current content if invalid
         except InvalidProjectFile:
             showInfo(self, t("menuOpenProject"), t("invalidFile"))
             return
@@ -279,7 +279,7 @@ class MainWindow(QMainWindow):
         self.savedSnapshot = self.snapshot()
         self.refreshUI()
 
-    ### 匯出 ###
+    ### Export ###
     def onExportDocx(self):
         path, _ = QFileDialog.getSaveFileName(self, t("exportAs", ext="docx"), "", "Word Files (*.docx)")
         if path:

@@ -4,8 +4,7 @@ import com.chessnote.core.I18n
 import com.chessnote.core.PgnError
 import com.github.bhlangonijr.chesslib.Side
 
-// 介面文字：全部由 I18n 取得，切換語言時畫面會自動重組
-object S {
+object S {    // UI strings: all come from I18n; screens recompose when the language changes
     const val appName = "ChessNote Generator"
     const val pgn = "PGN"
     const val variants = "Variant"

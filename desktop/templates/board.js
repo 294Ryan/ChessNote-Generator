@@ -2,17 +2,17 @@
     const data = JSON.parse(document.getElementById("boardData").textContent);
     const startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     const flipped = data.o === "black";
-    const boards = [];    // 已建立的棋盤，列印前統一重置
-    const pendingInits = [];    // 尚未展開的 Line 卡片，列印前一併建立
-    const infoByIdx = {};    // 著法索引 → 該 PGN 文字的切分結果
+    const boards = [];    // Boards created so far; all reset before printing
+    const pendingInits = [];    // Line cards not yet expanded; initialized together before printing
+    const infoByIdx = {};    // Move index -> split result of that PGN text
 
-    // ### PGN 文字：切分著法、截斷相同開頭 ###
+    // ### PGN text: split moves, trim the shared prefix ###
 
-    function tokenizePgn(text) {    // 回傳每個著法在文字中的位置；略過註解、變著、NAG、手數與結果
+    function tokenizePgn(text) {    // Returns each move's position in the text; skips comments, variations, NAGs, move numbers and results
         const tokens = [];
         const n = text.length;
         let i = 0;
-        let numStart = -1;    // 緊貼在著法前的手數起點，截斷時要一併保留
+        let numStart = -1;    // Start of the move number right before a move; kept when trimming
         while (i < n) {
             const ch = text[i];
             if (/\s/.test(ch)) {
@@ -45,7 +45,7 @@
                     j++;
                 }
                 if (j === i) {
-                    j++;    // 落單的 } 等符號，略過以確保一定前進
+                    j++;    // Stray symbols such as } are skipped so the loop always advances
                 }
                 let word = text.slice(i, j);
                 let start = i;
@@ -72,18 +72,18 @@
         return tokens;
     }
 
-    function moveNumberPrefix(idx, text, tokens, firstShown) {    // 截斷後的第一步若沒有手數就補上，如 6...Kxf7；格式（有無空格）跟著原文
+    function moveNumberPrefix(idx, text, tokens, firstShown) {    // If the first move after trimming has no move number, add one (e.g. 6...Kxf7); spacing follows the original text
         if (tokens[firstShown].numStart < tokens[firstShown].start) {
             return "";
         }
         const fen = (data.l[idx][0] || startFen).split(" ");
-        const ordinal = firstShown + (fen[1] === "b" ? 1 : 0);    // 偶數＝白方走
+        const ordinal = firstShown + (fen[1] === "b" ? 1 : 0);    // Even = white to move
         const number = (+fen[5] || 1) + Math.floor(ordinal / 2);
         const compact = tokens.some(tk => tk.numStart < tk.start && !/\s$/.test(text.slice(tk.numStart, tk.start)));
         return number + (ordinal % 2 ? "..." : ".") + (compact ? "" : " ");
     }
 
-    function fillMoves(info) {    // 重建文字，每個著法包成 span；firstShown 之前的著法（與起始 PGN 相同的部分）不顯示
+    function fillMoves(info) {    // Rebuild the text with each move wrapped in a span; moves before firstShown (shared with the starting PGN) are hidden
         const container = info.container;
         container.textContent = info.prefix;
         let pos = info.firstShown > 0 ? info.tokens[info.firstShown].numStart : 0;
@@ -110,7 +110,7 @@
             const tokens = tokenizePgn(text);
             const skip = data.l[idx][2];
             const cut = data.l[idx][3];
-            const valid = tokens.length > 0 && tokens.length === lineMoves(idx).length - (cut ? 0 : skip);    // 著法數對不上就不標記、不截斷
+            const valid = tokens.length > 0 && tokens.length === lineMoves(idx).length - (cut ? 0 : skip);    // If the move count doesn't match, skip marking and trimming
             const firstShown = valid && cut ? skip : 0;
             const info = {text: text, tokens: tokens, valid: valid, container: container, spans: [], cur: null,
                 base: cut ? 0 : skip, firstShown: firstShown, prefix: firstShown > 0 ? moveNumberPrefix(idx, text, tokens, firstShown) : ""};
@@ -125,7 +125,7 @@
         });
     }
 
-    function fitCollapsed() {    // 摺疊列放不下時，在右側顯示「.....」
+    function fitCollapsed() {    // When the collapsed row overflows, show '.....' on the right
         const rows = [...document.querySelectorAll(".line-card:not([open]) .collapsed")];
         rows.forEach(row => row.classList.remove("is-clipped"));
         const clipped = rows.filter(row => {
@@ -135,10 +135,9 @@
         clipped.forEach(row => row.classList.add("is-clipped"));
     }
 
-    // ### 局面與走子 ###
-    // 局面格式：{b: 64 格陣列（a1 = 0，h8 = 63）, t: "w" | "b", c: 王車易位權利, last: [起點, 終點]}
+    // ### Positions and moves ###
 
-    function sqIndex(name) {
+    function sqIndex(name) {    // Position format: {b: 64-square array (a1 = 0, h8 = 63), t: "w" | "b", c: castling rights, last: [from, to]}
         return (name.charCodeAt(1) - 49) * 8 + (name.charCodeAt(0) - 97);
     }
 
@@ -158,13 +157,13 @@
         return {b: b, t: parts[1], c: parts[2] === "-" ? "" : parts[2], last: null};
     }
 
-    function posKey(pos) {    // 換位時不同路線會走到同一局面，以此合併；不含吃過路兵資訊
+    function posKey(pos) {    // Transpositions reach the same position by different routes; used to merge them. En passant info is excluded
         return pos.b.map(p => p || ".").join("") + pos.t + pos.c;
     }
 
     const rightsLostAt = {0: "Q", 7: "K", 56: "q", 63: "k", 4: "KQ", 60: "kq"};
 
-    function applyMove(pos, uci) {    // 著法由 python-chess 保證合法，這裡只負責套用
+    function applyMove(pos, uci) {    // Moves are guaranteed legal by python-chess; this only applies them
         const from = sqIndex(uci.substr(0, 2));
         const to = sqIndex(uci.substr(2, 2));
         const promo = uci.charAt(4);
@@ -173,11 +172,11 @@
         const white = piece === piece.toUpperCase();
         const kind = piece.toLowerCase();
         if (kind === "p" && from % 8 !== to % 8 && !b[to]) {
-            b[to + (white ? -8 : 8)] = null;    // 吃過路兵
+            b[to + (white ? -8 : 8)] = null;    // En passant
         }
         if (kind === "k" && Math.abs(to - from) === 2) {
             const rookFrom = to > from ? from + 3 : from - 4;
-            b[(from + to) / 2] = b[rookFrom];    // 王車易位
+            b[(from + to) / 2] = b[rookFrom];    // Castling
             b[rookFrom] = null;
         }
         b[to] = promo ? (white ? promo.toUpperCase() : promo) : piece;
@@ -195,7 +194,7 @@
         return data.l[index][1].split(" ").filter(Boolean);
     }
 
-    function buildGraph(indexes) {    // 局面 → 該局面下已登錄的著法集合
+    function buildGraph(indexes) {    // Position -> set of registered moves from that position
         const graph = new Map();
         for (const index of indexes) {
             let pos = lineStart(index);
@@ -211,7 +210,7 @@
         return graph;
     }
 
-    // ### 繪圖 ###
+    // ### Drawing ###
 
     const center = sq => {
         const col = flipped ? 7 - sq % 8 : sq % 8;
@@ -225,7 +224,7 @@
         const fileDiff = Math.abs(from % 8 - to % 8);
         const rankDiff = Math.abs(Math.floor(from / 8) - Math.floor(to / 8));
         let pts = [[x1, y1], [x2, y2]];
-        if (fileDiff * rankDiff === 2) {    // 馬走 L 形
+        if (fileDiff * rankDiff === 2) {    // Knight move (L-shape)
             pts = fileDiff > rankDiff ? [[x1, y1], [x2, y1], [x2, y2]] : [[x1, y1], [x1, y2], [x2, y2]];
         }
         const [px, py] = pts[pts.length - 2];
@@ -261,9 +260,9 @@
 
         let pos, hist, redo, sel, moves, movable, targets, down;
 
-        // ### 符合的 Line（只有起始局面棋盤） ###
+        // ### Matching Lines (starting-position board only) ###
 
-        const cards = isAll ? [...document.querySelectorAll(".line-card[data-idx]")].map(c => +c.dataset.idx) : [];    // 依頁面由上到下的順序
+        const cards = isAll ? [...document.querySelectorAll(".line-card[data-idx]")].map(c => +c.dataset.idx) : [];    // In page order, top to bottom
         const lineKeys = new Map();
         for (const index of cards) {
             let p = lineStart(index);
@@ -277,14 +276,14 @@
         const matchEl = document.createElement("div");
         matchEl.className = "cb-match";
         let defaultMatches = [];
-        let showAllChips = false;    // 超過 4 條時，是否已展開全部
+        let showAllChips = false;    // Whether all chips are expanded when there are more than 4
 
         function matchesAt(p) {
             const key = posKey(p);
             return cards.filter(index => lineKeys.get(index).has(key));
         }
 
-        function labelOf(index) {    // Variant › 子分類 #k，同一區只有一條時省略 #k
+        function labelOf(index) {    // Variant › SubCategory #k; #k is omitted when the section has only one Line
             const card = document.getElementById("line-" + index);
             const parts = [card.closest(".variant").querySelector(".variant-title").textContent.trim()];
             const sub = card.closest(".subcategory");
@@ -299,7 +298,7 @@
             const card = document.getElementById("line-" + index);
             card.open = true;
             card.classList.remove("cb-flash");
-            void card.offsetWidth;    // 重新觸發閃爍動畫
+            void card.offsetWidth;    // Retrigger the flash animation
             card.classList.add("cb-flash");
             const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             card.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "start"});
@@ -333,7 +332,7 @@
             const matched = matchesAt(pos);
             if (!matched.length || defaultMatches.every(index => matched.includes(index))) {
                 showAllChips = false;
-                return;    // 沒比預設局面窄，比對沒有意義
+                return;    // Not narrower than the default position, so matching is pointless
             }
             const overflow = matched.length > 4;
             if (!overflow) {
@@ -343,16 +342,16 @@
                 matchEl.appendChild(makeChip(index));
             }
             if (overflow && !showAllChips) {
-                matchEl.appendChild(makeToggle(data.t.viewAll.replace("{n}", matched.length), true));    // 第 4 格
+                matchEl.appendChild(makeToggle(data.t.viewAll.replace("{n}", matched.length), true));    // 4th slot
             } else if (overflow) {
                 const foot = document.createElement("div");
                 foot.className = "cb-foot";
-                foot.appendChild(makeToggle(data.t.collapse, false));    // 展開後的最底部
+                foot.appendChild(makeToggle(data.t.collapse, false));    // Bottom of the expanded list
                 matchEl.appendChild(foot);
             }
         }
 
-        function updateMark() {    // PGN 文字上標記目前這一手；離開自己的 PGN 路徑或在被截掉的範圍內就不標記
+        function updateMark() {    // Mark the current move in the PGN text; no mark when off the own PGN path or inside the trimmed range
             if (!info || !info.valid) {
                 return;
             }
@@ -371,7 +370,7 @@
             return hist.length <= ownMoves.length && hist.every((h, i) => h.uci === ownMoves[i]);
         }
 
-        function ownNext() {    // 目前仍在自己的 PGN 路徑上時，PGN 的下一步
+        function ownNext() {    // Next PGN move while still on the own PGN path
             return onOwnPath() && hist.length < ownMoves.length ? ownMoves[hist.length] : null;
         }
 
@@ -412,7 +411,7 @@
             }
         }
 
-        function goTo(ply) {    // 跳到自己 PGN 的第 ply 手之後
+        function goTo(ply) {    // Jump to just after ply N of the own PGN
             pos = ownStart;
             hist = [];
             redo = [];
@@ -424,7 +423,7 @@
             refresh();
         }
 
-        function reset() {    // 回到 PGN 最終局面
+        function reset() {    // Back to the final PGN position
             goTo(ownMoves.length);
         }
 
@@ -433,7 +432,7 @@
             if (!options.length) {
                 return;
             }
-            play(options.find(u => u.charAt(4) === "q") || options[0]);    // 同格多種升變時優先皇后
+            play(options.find(u => u.charAt(4) === "q") || options[0]);    // Prefer queen when several promotions go to the same square
         }
 
         function refresh() {
@@ -496,7 +495,7 @@
             svg.innerHTML = s;
         }
 
-        // ### 點擊與拖曳 ###
+        // ### Click and drag ###
 
         function squareAt(clientX, clientY) {
             const rect = svg.getBoundingClientRect();
@@ -551,7 +550,7 @@
             }
             if (!down.dragging) {
                 if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6) {
-                    return;    // 位移太小視為點擊
+                    return;    // Movement too small counts as a click
                 }
                 startDrag();
             }
@@ -571,11 +570,11 @@
                 if (sq >= 0 && targets.has(sq)) {
                     tryMove(d.sq, sq);
                 } else {
-                    refresh();    // 放到非登錄走法的格子，棋子彈回
+                    refresh();    // Dropped on a square with no registered move: piece snaps back
                 }
             } else if (d.fromPiece) {
                 if (d.wasSelected) {
-                    sel = null;    // 再點一次已選取的棋子 = 取消選取
+                    sel = null;    // Clicking the selected piece again deselects it
                 }
                 refresh();
             } else if (sel !== null && sq >= 0 && targets.has(sq)) {
@@ -591,7 +590,7 @@
             refresh();
         });
 
-        svg.addEventListener("touchstart", e => {    // 只有可走的棋子禁止捲動，棋盤其他地方仍可滑動捲頁
+        svg.addEventListener("touchstart", e => {    // Only movable pieces block scrolling; the rest of the board still scrolls the page
             const t = e.touches[0];
             if (movable.has(squareAt(t.clientX, t.clientY))) {
                 e.preventDefault();
@@ -612,10 +611,10 @@
         }
         if (info && info.valid) {
             info.spans.forEach(span => span.classList.add("live"));
-            info.container.addEventListener("click", e => {    // 點 PGN 上的著法，棋盤跳到該步
+            info.container.addEventListener("click", e => {    // Clicking a move in the PGN jumps the board to it
                 const span = e.target.closest(".pgn-mv");
                 if (span) {
-                    e.preventDefault();    // 避免點擊同時讓摺疊列收合
+                    e.preventDefault();    // Prevent the click from also collapsing the row
                     goTo(info.base + (+span.dataset.j) + 1);
                 }
             });
@@ -633,7 +632,7 @@
             createBoard(el);
             return;
         }
-        const initOnce = () => {    // Line 卡片展開時才繪製
+        const initOnce = () => {    // Draw only when the Line card is expanded
             card.removeEventListener("toggle", initOnce);
             if (!el.childElementCount) {
                 createBoard(el);
@@ -655,12 +654,12 @@
     };
     fitCollapsed();
     window.addEventListener("resize", queueFit);
-    document.addEventListener("toggle", queueFit, true);    // toggle 不會冒泡，用 capture 接收；收合時重新計算
+    document.addEventListener("toggle", queueFit, true);    // toggle doesn't bubble; capture it; recompute on collapse
     if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(queueFit);
     }
 
-    window.addEventListener("beforeprint", () => {    // 列印時每個棋盤都回到預設局面
+    window.addEventListener("beforeprint", () => {    // On print, every board returns to the default position
         pendingInits.forEach(fn => fn());
         boards.forEach(reset => reset());
     });

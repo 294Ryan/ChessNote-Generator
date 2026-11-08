@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-private object T {    // 匯出檔固定文字，跟隨目前選的語言
+private object T {    // Fixed export text, follows the selected language
     val lang get() = I18n.lang
     val perspective get() = I18n.t("perspective")
     val eyebrow get() = I18n.t("eyebrow")
@@ -20,7 +20,7 @@ private object T {    // 匯出檔固定文字，跟隨目前選的語言
     val altStarting get() = I18n.t("altStarting")
     val altLine get() = I18n.t("altLine")
 
-    val eastAsiaFont get() = when (I18n.lang) {    // Word 中日韓文字的襯線字型
+    val eastAsiaFont get() = when (I18n.lang) {    // Serif font for CJK text in Word
         "zh-CN" -> "SimSun"
         "ja" -> "MS Mincho"
         "ko" -> "Batang"
@@ -28,10 +28,9 @@ private object T {    // 匯出檔固定文字，跟隨目前選的語言
     }
 }
 
-private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&#34;").replace("'", "&#39;")    // 等同 Jinja 的 autoescape
+private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&#34;").replace("'", "&#39;")    // Same as Jinja autoescape
 
-// 內嵌在筆記裡的專案資料：與暫存檔（.json）格式相同，但不帶本機圖片路徑；手動上傳的圖已是 imageData
-private fun embeddedProjectJson(o: Opening): String {
+private fun embeddedProjectJson(o: Opening): String {    // Project data embedded in the note: same format as the draft (.json) but without local image paths; manually uploaded images are already imageData
     val json = o.toJson()
     json.put("startingImagePath", JSONObject.NULL)
     val variants = json.getJSONArray("variants")
@@ -41,7 +40,7 @@ private fun embeddedProjectJson(o: Opening): String {
         val subs = variant.getJSONArray("subCategories")
         for (j in 0 until subs.length()) stripImagePaths(subs.getJSONObject(j).getJSONArray("lines"))
     }
-    return json.toString().replace("<", "\\u003c")    // 避免資料中出現 </script> 提早結束區塊
+    return json.toString().replace("<", "\\u003c")    // Prevents </script> in the data from ending the block early
 }
 
 private fun stripImagePaths(lines: JSONArray) {
@@ -50,12 +49,11 @@ private fun stripImagePaths(lines: JSONArray) {
 
 private fun orientationLabel(o: Opening) = I18n.t(if (o.orientation == "black") "black" else "white")
 
-private class LineEntry(val fen: String, val moves: String, val skip: Int, val cut: Int)    // 互動棋盤用：起始 FEN、UCI 著法、與起始 PGN 相同的手數、是否截斷顯示文字
+private class LineEntry(val fen: String, val moves: String, val skip: Int, val cut: Int)    // For the interactive board: starting FEN, UCI moves, move count shared with the starting PGN, whether to trim the displayed text
 
 class Exporter(private val boardSvg: BoardSvg) {
 
-    // 圖片三態：刪除 -> null；手動上傳 -> 直接用；否則依 PGN 自動生成（桌面版上傳圖的路徑手機讀不到，一律退回自動生成）
-    private fun imageBytes(pgn: String, startingPgn: String, imageData: String?, noImage: Boolean, orientation: String): ByteArray? {
+    private fun imageBytes(pgn: String, startingPgn: String, imageData: String?, noImage: Boolean, orientation: String): ByteArray? {    // Image has three states: deleted -> null; manual upload -> use as is; otherwise auto-generate from PGN (desktop upload paths are unreadable on mobile, so fall back to auto-generated)
         if (noImage) return null
         if (imageData != null) return Base64.decode(imageData, Base64.DEFAULT)
         if (pgn.isBlank()) return null
@@ -66,16 +64,14 @@ class Exporter(private val boardSvg: BoardSvg) {
         return out.toByteArray()
     }
 
-    // ===== HTML（移植自桌面版 exporter_html.py 與 opening_note.html.j2）=====
+    // ### HTML (ported from desktop exporter_html.py and opening_note.html.j2) ###
 
-    // forPdf = true：Line 卡片全部展開、頁面邊距 8mm、不顯示最上方的 eyebrow 文字與卡片外框
-    // embedProject = true：內嵌專案資料，之後可在編輯器開啟這份筆記繼續編輯（預覽與 PDF 不需要）
-    fun html(o: Opening, forPdf: Boolean = false, embedProject: Boolean = false): String {
+    fun html(o: Opening, forPdf: Boolean = false, embedProject: Boolean = false): String {    // forPdf = true: all Line cards expanded, 8mm page margin, no top eyebrow text or card borders; embedProject = true: embed project data so the note can be reopened in the editor (not needed for preview/PDF)
         val entries = mutableListOf<LineEntry>()
         var startingFen = ""
         var startingMoves = emptyList<String>()
 
-        fun register(pgn: String, isStarting: Boolean): Int? {    // 回傳在 entries 中的索引；空白回傳 null
+        fun register(pgn: String, isStarting: Boolean): Int? {    // Returns the index in entries; null if blank
             if (pgn.isBlank()) return null
             val resolved = resolvePgn(pgn, if (isStarting) "" else o.startingPgn)
             val parsed = PgnService.play(resolved)
@@ -83,9 +79,9 @@ class Exporter(private val boardSvg: BoardSvg) {
             val moves = parsed.uci
             var skip = startingMoves.size
             if (!(skip > 0 && fen == startingFen && moves.size > skip && moves.subList(0, skip) == startingMoves)) {
-                skip = 0    // 沒有以起始 PGN 開頭（或沒有多出新著法）就不截斷
+                skip = 0    // Not trimmed if it doesn't start with the starting PGN (or adds no new moves)
             }
-            val cut = if (skip > 0 && resolved == pgn) 1 else 0    // 完整寫法才需要截掉文字；接續寫法本來就從起始 PGN 之後開始
+            val cut = if (skip > 0 && resolved == pgn) 1 else 0    // Only full-form Lines need trimming; continuation form already starts after the starting PGN
             entries.add(LineEntry(fen, moves.joinToString(" "), skip, cut))
             return entries.size - 1
         }
@@ -93,7 +89,7 @@ class Exporter(private val boardSvg: BoardSvg) {
         fun imageUri(data: String?, noImage: Boolean) = if (!noImage && data != null) "data:image/png;base64,$data" else null
 
         fun lineCard(line: Line): String {
-            val index = register(line.pgn, false)    // 每條 Line 都登記，即使用了手動圖也要讓起始局面棋盤看得到它的分支
+            val index = register(line.pgn, false)    // Register every Line, even those with a manual image, so the starting-position board shows its branches
             val board = if (!line.noImage && line.imageData == null) index else null
             val image = imageUri(line.imageData, line.noImage)
             val pgn = esc(line.pgn)
@@ -146,7 +142,7 @@ class Exporter(private val boardSvg: BoardSvg) {
             body.append("<div class=\"variant-body\">")
             if (v.lines.isNotEmpty()) {
                 body.append("<div class=\"direct-lines\">")
-                v.lines.forEach { body.append(lineCard(it)) }    // Line 排在子分類之前，登記順序與桌面版一致
+                v.lines.forEach { body.append(lineCard(it)) }    // Lines before subcategories; registration order matches desktop
                 body.append("</div>")
             }
             for (s in v.subCategories) {
@@ -163,15 +159,15 @@ class Exporter(private val boardSvg: BoardSvg) {
         val data = JSONObject()
             .put("o", o.orientation)
             .put("l", JSONArray().also { arr -> entries.forEach { arr.put(JSONArray().put(it.fen).put(it.moves).put(it.skip).put(it.cut)) } })
-            .put("t", JSONObject().put("viewAll", I18n.t("boardViewAll", "n" to "{n}")).put("collapse", I18n.t("collapse")))    // {n} 由 JS 代入符合的 Line 數
-        val boardJson = data.toString().replace("<", "\\u003c")    // 避免資料中出現 </script> 破壞頁面
+            .put("t", JSONObject().put("viewAll", I18n.t("boardViewAll", "n" to "{n}")).put("collapse", I18n.t("collapse")))    // {n} is filled in by JS with the number of matching Lines
+        val boardJson = data.toString().replace("<", "\\u003c")    // Prevents </script> in the data from breaking the page
 
         val sb = StringBuilder()
         sb.append("<!DOCTYPE html><html lang=\"${esc(T.lang)}\"><head><meta charset=\"utf-8\">")
         sb.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
         sb.append("<title>${esc(o.name)}</title><style>")
         sb.append(exportCss.replace("__EXPAND__", T.expand).replace("__COLLAPSE__", T.collapse))
-        if (forPdf) sb.append("@page { size: A4; margin: 8mm; } .line-card { border: none; }")    // PDF 邊距由 @page 控制，並拿掉卡片外框
+        if (forPdf) sb.append("@page { size: A4; margin: 8mm; } .line-card { border: none; }")    // PDF margins come from @page; card borders removed
         sb.append("</style></head><body>")
         if (entries.isNotEmpty()) {
             sb.append("<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs>${boardSvg.pieceSymbols()}</defs></svg>")
@@ -184,7 +180,7 @@ class Exporter(private val boardSvg: BoardSvg) {
         return sb.toString()
     }
 
-    // ===== DOCX（手寫 OOXML，不依賴 Apache POI）=====
+    // ### DOCX (hand-written OOXML, no Apache POI) ###
 
     private fun x(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -213,7 +209,7 @@ class Exporter(private val boardSvg: BoardSvg) {
         }
 
         fun pgnParagraph(pgn: String) {
-            body.append(paragraph(null, textRun("\u00A0$pgn\u00A0", pgnRPr)))    // 前後用不換行空白，底色不會貼著文字
+            body.append(paragraph(null, textRun("\u00A0$pgn\u00A0", pgnRPr)))    // Non-breaking spaces on both sides so the background doesn't touch the text
         }
 
         fun imageParagraph(bytes: ByteArray) {
@@ -222,7 +218,7 @@ class Exporter(private val boardSvg: BoardSvg) {
             if (bounds.outWidth <= 0) return
             images.add(bytes)
             val n = images.size
-            val cx = 5029200L    // 5.5 吋，與桌面版一致
+            val cx = 5029200L    // 5.5 inches, same as desktop
             val cy = cx * bounds.outHeight / bounds.outWidth
             body.append(
                 "<w:p><w:r><w:drawing><wp:inline distT=\"0\" distB=\"0\" distL=\"0\" distR=\"0\">" +
@@ -252,7 +248,7 @@ class Exporter(private val boardSvg: BoardSvg) {
             rule()
             heading(2, v.name)
             description(v.description)
-            v.lines.forEach { lineSection(it) }    // Line 排在子分類之前
+            v.lines.forEach { lineSection(it) }    // Lines come before subcategories
             for (s in v.subCategories) {
                 heading(3, s.name)
                 description(s.description)

@@ -22,7 +22,7 @@ android {
         versionName = "1.0.0"
     }
 
-    signingConfigs {                             // ← 新增 ③（整段放在 defaultConfig 結束之後）
+    signingConfigs {
         create("release") {
             if (keystoreProps.isNotEmpty()) {
                 storeFile = file(keystoreProps.getProperty("storeFile"))
@@ -58,6 +58,6 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.activity:activity-compose:1.9.2")
-    implementation("com.github.bhlangonijr:chesslib:1.3.4")    // PGN 著法驗證與走子
-    implementation("com.caverock:androidsvg-aar:1.4")    // 把棋盤 SVG 轉成點陣圖
+    implementation("com.github.bhlangonijr:chesslib:1.3.4")    // PGN move validation and playing
+    implementation("com.caverock:androidsvg-aar:1.4")    // Renders the board SVG to a bitmap
 }

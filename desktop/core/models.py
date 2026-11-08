@@ -1,10 +1,10 @@
 import uuid
 
-def newId():    # 產生唯一識別碼，供樹狀節點對應用
+def newId():    # Generate a unique id for tree node mapping
     return str(uuid.uuid4())
 
 
-def moveItem(items, itemId, insertIndex):    # 把 itemId 移到 insertIndex 之前（索引以移動前為準），順序有變回傳 True
+def moveItem(items, itemId, insertIndex):    # Move itemId before insertIndex (index is pre-move); returns True if the order changed
     oldIndex = next(i for i, n in enumerate(items) if n.id == itemId)
     newIndex = insertIndex - 1 if insertIndex > oldIndex else insertIndex
     if newIndex == oldIndex:
@@ -17,9 +17,9 @@ class Line:
     def __init__(self, pgn="", imagePath=None, noImage=False, imageData=None):
         self.id = newId()
         self.pgn = pgn
-        self.imagePath = imagePath    # 舊存檔遺留的本機圖片路徑，只原樣保留不再使用；新上傳的圖一律存 imageData
-        self.noImage = noImage    # True 代表刻意不放圖片
-        self.imageData = imageData    # 手動上傳圖的 base64（PNG），None 代表用自動生成圖
+        self.imagePath = imagePath    # Legacy local image path from old saves; kept as-is, no longer used; new uploads are always stored in imageData
+        self.noImage = noImage    # True means no image on purpose
+        self.imageData = imageData    # Base64 (PNG) of the uploaded image; None means auto-generated
 
     def toDict(self):
         data = {
@@ -34,7 +34,7 @@ class Line:
 
     @staticmethod
     def fromDict(data):
-        line = Line(data["pgn"], data.get("imagePath"), data.get("noImage", False), data.get("imageData"))    # 舊存檔的 name / description 直接忽略
+        line = Line(data["pgn"], data.get("imagePath"), data.get("noImage", False), data.get("imageData"))    # Legacy name / description are ignored
         line.id = data["id"]
         return line
 
@@ -43,7 +43,7 @@ class SubCategory:
     def __init__(self, name="", description=""):
         self.id = newId()
         self.name = name
-        self.description = description    # 選填說明
+        self.description = description    # Optional description
         self.lines = []
 
     def addLine(self, line=None):
@@ -71,9 +71,9 @@ class Variant:
     def __init__(self, name="", description=""):
         self.id = newId()
         self.name = name
-        self.description = description    # 選填說明
+        self.description = description    # Optional description
         self.subCategories = []
-        self.lines = []    # 允許不經子分類，直接掛 Line
+        self.lines = []    # Lines may attach directly, without a subcategory
 
     def addSubCategory(self, sub=None):
         sub = sub or SubCategory()
@@ -108,10 +108,10 @@ class Opening:
         self.name = name
         self.description = description
         self.startingPgn = startingPgn
-        self.startingImagePath = None    # 舊存檔遺留的本機圖片路徑，只原樣保留不再使用
-        self.startingImageData = None    # 手動上傳圖的 base64（PNG），None 代表用自動生成圖
-        self.startingNoImage = False    # True 代表起始局面刻意不放圖片
-        self.orientation = "white"    # 自動生成圖的棋盤視角 white / black
+        self.startingImagePath = None    # Legacy local image path from old saves; kept as-is, no longer used
+        self.startingImageData = None    # Base64 (PNG) of the uploaded image; None means auto-generated
+        self.startingNoImage = False    # True means no image for the starting position on purpose
+        self.orientation = "white"    # Board orientation of the auto-generated image: white / black
         self.variants = []
 
     def addVariant(self, variant=None):
@@ -119,7 +119,7 @@ class Opening:
         self.variants.append(variant)
         return variant
 
-    ### 序列化／反序列化，供 JSON 存檔使用 ###
+    ### Serialization / deserialization for JSON saves ###
     def toDict(self):
         data = {
             "name": self.name,

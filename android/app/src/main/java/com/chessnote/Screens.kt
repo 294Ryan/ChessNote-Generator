@@ -50,11 +50,10 @@ import com.chessnote.core.SubCategory
 import com.chessnote.core.Variant
 import java.util.Collections
 
-// ===== 共用元件（外觀對齊桌面版）=====
+// ### Shared components (look matches desktop) ###
 
-// 卡片：左側主色條 + 類型徽章，對應桌面版編輯區的每個區塊
 @Composable
-fun EditorCard(accent: Color, badge: String, content: @Composable ColumnScope.() -> Unit) {
+fun EditorCard(accent: Color, badge: String, content: @Composable ColumnScope.() -> Unit) {    // Card: left color bar + type badge, mirrors each block of the desktop editor
     val p = LocalPalette.current
     val shape = RoundedCornerShape(8.dp)
     val barWidth = with(LocalDensity.current) { 4.dp.toPx() }
@@ -110,9 +109,8 @@ fun AddButton(text: String, accent: Color, onClick: () -> Unit) {
     ) { Text(text, fontSize = 13.sp) }
 }
 
-// 清單列：同色系淡底 + 左側色條，對應桌面版左側樹的節點
 @Composable
-private fun ItemRow(title: String, accent: Color, index: Int, count: Int, onClick: () -> Unit, onUp: () -> Unit, onDown: () -> Unit, onDelete: () -> Unit) {
+private fun ItemRow(title: String, accent: Color, index: Int, count: Int, onClick: () -> Unit, onUp: () -> Unit, onDown: () -> Unit, onDelete: () -> Unit) {    // List row: tinted background + left color bar, mirrors desktop tree nodes
     val p = LocalPalette.current
     val barWidth = with(LocalDensity.current) { 4.dp.toPx() }
     Row(
@@ -132,9 +130,8 @@ private fun ItemRow(title: String, accent: Color, index: Int, count: Int, onClic
     }
 }
 
-// 同層級清單：點擊進入、上下箭頭調序、✕ 刪除（先確認）
 @Composable
-fun <T> ItemList(items: MutableList<T>, accent: Color, titleOf: (Int, T) -> String, onOpen: (T) -> Unit, onChanged: () -> Unit) {
+fun <T> ItemList(items: MutableList<T>, accent: Color, titleOf: (Int, T) -> String, onOpen: (T) -> Unit, onChanged: () -> Unit) {    // Sibling list: tap to open, arrows to reorder, ✕ to delete (with confirmation)
     val p = LocalPalette.current
     var target by remember { mutableStateOf<T?>(null) }
     items.forEachIndexed { i, item ->
@@ -179,7 +176,7 @@ private fun lineTitle(i: Int, line: Line) = "Line.${i + 1}  " + (if (line.pgn.is
 
 private fun isAutoImage(line: Line) = line.imagePath == null && line.imageData == null && !line.noImage
 
-// ===== 各畫面 =====
+// ### Screens ###
 
 @Composable
 fun RootScreen(state: AppState, boardSvg: BoardSvg) {
@@ -276,7 +273,7 @@ fun VariantScreen(state: AppState, route: Route.VariantEdit) {
             }, minLines = 3)
         }
 
-        SectionLabel(S.lines)    // Line 排在子分類上方，與桌面版一致
+        SectionLabel(S.lines)    // Lines go above subcategories, same as desktop
         ItemList(v.lines, Accent.line, ::lineTitle, { state.push(Route.LineEdit(v.id, null, it.id)) }, { state.touch() })
         AddButton(S.addLine, Accent.line) {
             val l = Line()

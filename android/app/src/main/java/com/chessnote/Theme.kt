@@ -9,8 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// 色票取自桌面版 ui/theme.py，兩邊維持同一套外觀
-class EditorPalette(
+class EditorPalette(    // Palette taken from desktop ui/theme.py so both look the same
     val dark: Boolean,
     val pageBg: Color,
     val cardBg: Color,
@@ -25,7 +24,7 @@ class EditorPalette(
     val popupBg: Color,
     val danger: Color,
     val radioBorder: Color,
-    val chipAlpha: Float,    // 清單列底色的透明度
+    val chipAlpha: Float,    // List row background opacity
     val primary: Color,
 )
 
@@ -51,8 +50,7 @@ val DarkPalette = EditorPalette(
 
 val LocalPalette = staticCompositionLocalOf { LightPalette }
 
-// 四種項目的主色，與桌面版一致
-object Accent {
+object Accent {    // Main colors of the four item types, same as desktop
     val opening = Color(0xFF6B7280)
     val variant = Color(0xFF2B6CB0)
     val sub = Color(0xFF2F855A)
@@ -78,9 +76,8 @@ fun colorSchemeOf(p: EditorPalette): ColorScheme =
         )
     }
 
-// 卡片內輸入框：聚焦時邊框變該卡片主色，PGN 有誤時變紅
 @Composable
-fun fieldColors(accent: Color): TextFieldColors {
+fun fieldColors(accent: Color): TextFieldColors {    // Input inside a card: border takes the card's main color on focus, red on PGN error
     val p = LocalPalette.current
     return OutlinedTextFieldDefaults.colors(
         focusedBorderColor = accent, unfocusedBorderColor = p.inputBorder, errorBorderColor = p.danger,

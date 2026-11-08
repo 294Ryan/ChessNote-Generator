@@ -6,23 +6,23 @@ from core.i18n import t
 from ui.editor_style import editorStyle, CARD_RADIUS, cardStyle
 from ui.line_widget import PgnImageEditor
 
-INDENT_WIDTH = 28    # 每層縮排的像素寬度，呈現 Variant > 子分類 > Line 的從屬關係
+INDENT_WIDTH = 28    # Indent per level (px): Variant > SubCategory > Line
 
 COLOR_OPENING = "#6b7280"
 COLOR_VARIANT = "#2b6cb0"
 COLOR_SUBCATEGORY = "#2f855a"
 COLOR_LINE = "#8a6d3b"
 
-NODE_MIME = "application/x-chess-node-id"    # 拖曳時攜帶的節點 id
-AUTO_SCROLL_EDGE = 40    # 拖曳時游標距可視區上下緣多少像素內開始自動捲動
-AUTO_SCROLL_STEP = 20    # 每次自動捲動的像素
+NODE_MIME = "application/x-chess-node-id"    # Node id carried while dragging
+AUTO_SCROLL_EDGE = 40    # Distance (px) from the viewport top/bottom edge where auto-scroll starts during a drag
+AUTO_SCROLL_STEP = 20    # Pixels per auto-scroll step
 
 
-class DragHandle(QLabel):    # 區塊右上角的 ☰ 握把，按住拖曳調整順序
+class DragHandle(QLabel):    # ☰ handle at the block's top right; press and drag to reorder
     def __init__(self, nodeId, frame):
         super().__init__("☰")
         self.nodeId = nodeId
-        self.frame = frame    # 拖曳時拿來截圖當作游標跟隨的縮圖
+        self.frame = frame    # Screenshot used as the drag thumbnail following the cursor
         self.pressPos = None
         self.setToolTip(t("dragTip"))
         self.setCursor(Qt.SizeAllCursor)
@@ -46,7 +46,7 @@ class DragHandle(QLabel):    # 區塊右上角的 ☰ 握把，按住拖曳調�
         drag.exec_(Qt.MoveAction)
 
 
-class DragSortContainer(QWidget):    # 接收拖曳事件，判斷邏輯交給 EditorPanel
+class DragSortContainer(QWidget):    # Receives drag events; the logic is delegated to EditorPanel
     def __init__(self, panel):
         super().__init__()
         self.panel = panel
@@ -68,27 +68,27 @@ class DragSortContainer(QWidget):    # 接收拖曳事件，判斷邏輯交給 E
 class EditorPanel(QScrollArea):
     def __init__(self, onModelChanged, onStructureChanged):
         super().__init__()
-        self.onModelChanged = onModelChanged    # 欄位變動時通知 MainWindow 更新樹狀標籤
-        self.onStructureChanged = onStructureChanged    # 拖曳調序後通知 MainWindow 重建左右兩側
+        self.onModelChanged = onModelChanged    # Notifies MainWindow to update tree labels on field changes
+        self.onStructureChanged = onStructureChanged    # Notifies MainWindow to rebuild both sides after reordering
         self.setWidgetResizable(True)
         self.applyTheme()
 
         self.container = DragSortContainer(self)
         self.container.setObjectName("editorContainer")
-        self.container.setAttribute(Qt.WA_StyledBackground, True)    # 自訂 QWidget 預設不畫樣式表背景
+        self.container.setAttribute(Qt.WA_StyledBackground, True)    # Custom QWidget doesn't paint stylesheet backgrounds by default
         self.layout = QVBoxLayout(self.container)
         self.layout.setAlignment(Qt.AlignTop)
         self.layout.setContentsMargins(16, 16, 16, 16)
         self.layout.setSpacing(10)
         self.setWidget(self.container)
 
-        self.nodeWidgets = {}    # nodeId -> 區塊 widget，供樹狀導覽跳轉用
-        self.blocks = {}    # nodeId -> 該節點與所有子孫的 frame（由上到下），拖曳時用來算整塊範圍
-        self.siblingLists = {}    # nodeId -> 該節點所在的 model list，只能在同一個 list 內調序
-        self.imageEditors = []    # 所有圖片編輯器，棋盤視角變更時統一刷新預覽
+        self.nodeWidgets = {}    # nodeId -> block widget, for tree navigation jumps
+        self.blocks = {}    # nodeId -> frames of the node and all descendants (top to bottom), used to compute the whole block's extent while dragging
+        self.siblingLists = {}    # nodeId -> model list containing the node; reordering only within the same list
+        self.imageEditors = []    # All image editors, refreshed together when orientation changes
 
         self.draggingId = None
-        self.dropIndicator = QFrame(self.container)    # 拖曳時的插入位置指示線
+        self.dropIndicator = QFrame(self.container)
         self.dropIndicator.setStyleSheet("background: #e53e3e;")
         self.dropIndicator.hide()
         self.autoScrollTimer = QTimer(self)
@@ -105,13 +105,13 @@ class EditorPanel(QScrollArea):
         self.siblingLists.clear()
         self.imageEditors.clear()
 
-        self.opening = opening    # Line 編輯器隨時讀取最新的起始 PGN
-        self.currentOrientation = opening.orientation    # Line 編輯器建立時取用
+        self.opening = opening    # Line editors always read the latest starting PGN
+        self.currentOrientation = opening.orientation    # Used when a Line editor is created
         self.addOpeningSection(opening)
 
         for variant in opening.variants:
             self.addVariantSection(variant, opening.variants)
-            for line in variant.lines:    # Line 預設排在子分類上方
+            for line in variant.lines:    # Lines are placed above subcategories by default
                 self.addLineSection(line, 1, variant.lines, (variant.id,))
             for sub in variant.subCategories:
                 self.addSubCategorySection(sub, variant.subCategories, (variant.id,))
@@ -120,10 +120,10 @@ class EditorPanel(QScrollArea):
 
         self.layout.addStretch()
 
-    def applyTheme(self):    # 主題切換時重設面板樣式；卡片樣式在 rebuild 重建時套用
+    def applyTheme(self):    # On theme switch reset the panel style; card styles are applied on rebuild
         self.setStyleSheet(editorStyle())
 
-    ### 區塊建構 ###
+    ### Block construction ###
     def addOpeningSection(self, opening):
         frame = self.makeFrame(indentLevel=0, accentColor=COLOR_OPENING)
         layout = frame.contentLayout
@@ -134,7 +134,7 @@ class EditorPanel(QScrollArea):
         nameEdit.textChanged.connect(lambda text: self.updateField(opening, "name", text))
         layout.addWidget(nameEdit)
 
-        orientationRow = QHBoxLayout()    # 棋盤視角:  • White  ◦ Black
+        orientationRow = QHBoxLayout()    # Board orientation:  • White  ◦ Black
         orientationRow.addWidget(QLabel(t("orientationLabel")))
         whiteRadio = QRadioButton(t("white"))
         blackRadio = QRadioButton(t("black"))
@@ -196,21 +196,21 @@ class EditorPanel(QScrollArea):
 
         self.registerSection(line.id, frame, siblings, ancestorIds)
 
-    def addDescriptionField(self, layout, obj):    # Variant / SubCategory 共用的選填說明欄位
+    def addDescriptionField(self, layout, obj):    # Optional description field shared by Variant / SubCategory
         descEdit = QTextEdit(obj.description)
         descEdit.setPlaceholderText(t("descPlaceholder"))
         descEdit.setMaximumHeight(64)
         descEdit.textChanged.connect(lambda: self.updateField(obj, "description", descEdit.toPlainText()))
         layout.addWidget(descEdit)
 
-    ### 共用小工具 ###
-    def makeFrame(self, indentLevel=0, accentColor="#ccc"):    # indentLevel 呈現 Variant > 子分類 > Line 的從屬層次
+    ### Shared helpers ###
+    def makeFrame(self, indentLevel=0, accentColor="#ccc"):
         outer = QWidget()
         outerLayout = QHBoxLayout(outer)
         outerLayout.setContentsMargins(indentLevel * INDENT_WIDTH, 0, 0, 0)
         outerLayout.setSpacing(0)
 
-        bar = QFrame()    # 實體色塊取代 CSS border-left，避免樣式引擎在子元件邊界產生瑕疵線
+        bar = QFrame()    # Real color block instead of CSS border-left, which leaves artifact lines at child widget borders
         bar.setFixedWidth(4)
         bar.setStyleSheet(f"background: {accentColor}; border-top-left-radius: {CARD_RADIUS}px; border-bottom-left-radius: {CARD_RADIUS}px;")
         outerLayout.addWidget(bar)
@@ -223,12 +223,12 @@ class EditorPanel(QScrollArea):
         contentLayout.setSpacing(6)
         outerLayout.addWidget(content, 1)
 
-        outer.contentLayout = contentLayout    # 呼叫端透過這個加入欄位
+        outer.contentLayout = contentLayout    # Callers add their fields here
         return outer
 
-    def makeHeading(self, text, color, handle=None):    # 類型徽章，靠左對齊不佔滿整行，handle 為右側拖曳握把
+    def makeHeading(self, text, color, handle=None):    # Type badge, left-aligned (not full width); handle is the drag grip on the right
         row = QWidget()
-        row.setFixedHeight(22)    # 明確鎖死整個 row 的高度，不讓它依賴內部元件的 sizeHint 計算
+        row.setFixedHeight(22)    # Fix the row height explicitly instead of relying on child sizeHint
         row.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         rowLayout = QHBoxLayout(row)
         rowLayout.setContentsMargins(0, 0, 0, 0)
@@ -253,7 +253,7 @@ class EditorPanel(QScrollArea):
         for blockId in (*ancestorIds, nodeId):
             self.blocks.setdefault(blockId, []).append(frame)
 
-    ### model 更新 ###
+    ### Model updates ###
     def updateField(self, obj, attrName, value):
         setattr(obj, attrName, value)
         self.onModelChanged()
@@ -263,7 +263,7 @@ class EditorPanel(QScrollArea):
         self.currentOrientation = orientation
         for editor in self.imageEditors:
             editor.setOrientation(orientation)
-        self.onModelChanged()    # 視角是存檔內容，需要標記為已修改
+        self.onModelChanged()    # Orientation is saved content, so mark as modified
 
     def updateStartingPgn(self, opening, pgnEditor):
         opening.startingPgn = pgnEditor.getPgn()
@@ -272,7 +272,7 @@ class EditorPanel(QScrollArea):
         opening.startingNoImage = pgnEditor.getNoImage()
         for editor in self.imageEditors:
             if editor is not pgnEditor:
-                editor.previewTimer.start()    # 接續寫法的 Line 依新的起始局面重新檢查與預覽
+                editor.previewTimer.start()    # Continuation-style Lines re-check and re-preview against the new starting position
         self.onModelChanged()
 
     def updateLinePgn(self, line, pgnEditor):
@@ -287,8 +287,8 @@ class EditorPanel(QScrollArea):
         if widget:
             self.ensureWidgetVisible(widget)
 
-    ### 拖曳排序 ###
-    def findDropPosition(self, draggedId, y):    # 回傳 (插入索引, 指示線 y)；只比較同一個 list 的兄弟，所以不會跨層級
+    ### Drag reorder ###
+    def findDropPosition(self, draggedId, y):    # Returns (insert index, indicator y); compares siblings in the same list only, so it never crosses levels
         siblings = self.siblingLists[draggedId]
         for index, node in enumerate(siblings):
             headRect = self.blocks[node.id][0].geometry()
@@ -311,7 +311,7 @@ class EditorPanel(QScrollArea):
         if nodeId not in self.siblingLists:
             event.ignore()
             return
-        if self.draggingId != nodeId:    # 剛進入拖曳，啟動邊緣自動捲動
+        if self.draggingId != nodeId:    # Drag just started: start edge auto-scroll
             self.draggingId = nodeId
             self.autoScrollTimer.start()
         self.showIndicator(self.findDropPosition(nodeId, event.pos().y())[1])
@@ -327,14 +327,14 @@ class EditorPanel(QScrollArea):
         if moveItem(self.siblingLists[nodeId], nodeId, index):
             scrollValue = self.verticalScrollBar().value()
             self.onStructureChanged()
-            QTimer.singleShot(0, lambda: self.verticalScrollBar().setValue(scrollValue))    # 重建後維持原捲動位置
+            QTimer.singleShot(0, lambda: self.verticalScrollBar().setValue(scrollValue))    # Keep the scroll position after rebuild
 
     def endDrag(self):
         self.draggingId = None
         self.autoScrollTimer.stop()
         self.dropIndicator.hide()
 
-    def autoScrollStep(self):    # 游標靠近可視區上下緣時自動捲動，並同步更新指示線
+    def autoScrollStep(self):    # Auto-scroll near the viewport edges and update the indicator line
         y = self.viewport().mapFromGlobal(QCursor.pos()).y()
         bar = self.verticalScrollBar()
         if y < AUTO_SCROLL_EDGE:

@@ -16,13 +16,12 @@ import com.chessnote.core.Opening
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-// 完整檢視：用 WebView 顯示與 .html 匯出相同的內容
 @Composable
-fun PreviewScreen(state: AppState, exporter: Exporter) {
+fun PreviewScreen(state: AppState, exporter: Exporter) {    // Full view: WebView shows the same content as the .html export
     val version = state.observe()
     val o = state.opening ?: return
     val html by produceState<String?>(null, version) {
-        val copy = Opening.parse(o.toJson().toString())    // 複製一份再到背景執行緒產生，避免與編輯衝突
+        val copy = Opening.parse(o.toJson().toString())    // Copy first, then generate on a background thread to avoid conflicts with editing
         value = withContext(Dispatchers.Default) { exporter.html(copy) }
     }
     val content = html
@@ -32,12 +31,12 @@ fun PreviewScreen(state: AppState, exporter: Exporter) {
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
-                    settings.javaScriptEnabled = true    // 互動棋盤需要 JavaScript，內容全由本機產生
+                    settings.javaScriptEnabled = true    // Interactive board needs JavaScript; all content is generated locally
                     webViewClient = WebViewClient()
                 }
             },
             update = {
-                if (it.tag != content) {    // 避免每次重組都重新載入
+                if (it.tag != content) {    // Avoid reloading on every recomposition
                     it.tag = content
                     it.loadDataWithBaseURL(null, content, "text/html", "utf-8", null)
                 }

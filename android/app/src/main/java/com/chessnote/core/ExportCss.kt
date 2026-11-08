@@ -1,8 +1,7 @@
 package com.chessnote.core
 
-// 取自桌面版 opening_note.html.j2 的樣式，維持兩邊外觀一致
-val exportCss: String = listOf(
-    """    /* ===== 設計系統：編輯式出版品風格 ===== */
+val exportCss: String = listOf(    // Styles taken from desktop opening_note.html.j2 to keep both looks identical
+    """    /* ### Design system: editorial publication style ### */
     :root {
         --color-bg: #faf8f3;
         --color-bg-panel: #f3efe4;
@@ -38,7 +37,7 @@ val exportCss: String = listOf(
         padding: 72px 28px 120px;
     }
 
-    /* ===== 標題區 ===== */
+    /* ### Header ### */
     .masthead {
         border-bottom: 1px solid var(--color-rule);
         padding-bottom: 28px;
@@ -71,7 +70,7 @@ val exportCss: String = listOf(
         font-size: 1.02rem;
     }
 
-    /* ===== 共用：區塊標籤 / 說明文字 ===== */
+    /* ### Shared: section labels / descriptions ### */
     .section-desc {
         font-style: italic;
         color: var(--color-ink-soft);
@@ -81,7 +80,7 @@ val exportCss: String = listOf(
         line-height: 1.65;
     }
 
-    /* ===== PGN 區塊 ===== */
+    /* ### PGN block ### */
     .pgn-block {
         font-family: var(--font-mono);
         font-size: 0.9rem;
@@ -93,7 +92,7 @@ val exportCss: String = listOf(
         color: var(--color-ink);
     }
 
-    /* ===== 棋盤圖 ===== */
+    /* ### Board image ### */
     .board-figure {
         text-align: center;
         margin: 24px 0 8px;
@@ -105,11 +104,11 @@ val exportCss: String = listOf(
         background: #ffffff;
     }
 
-    /* ===== 起始局面 ===== */
+    /* ### Starting position ### */
     .starting-section { margin-bottom: 56px; }
     .starting-section .variant-title { margin-bottom: 14px; }
 
-    /* ===== Variant（大段落，地位同起始局面）===== */
+    /* ### Variant (major section, same rank as the starting position) ### */
     .variant {
         margin-top: 48px;
         padding-top: 32px;
@@ -131,7 +130,7 @@ val exportCss: String = listOf(
     }
     .variant-body { margin-top: 18px; margin-left: 2px; }
 
-    /* ===== 子分類（不折疊）===== */
+    /* ### SubCategory (not collapsible) ### */
     .subcategory {
         margin: 26px 0 18px 4px;
         padding-left: 20px;
@@ -147,7 +146,7 @@ val exportCss: String = listOf(
 
     .direct-lines { margin-left: 4px; }
 
-    /* ===== Line 卡片：唯一可折疊的單位 ===== */
+    /* ### Line card: the only collapsible unit ### */
     .line-card {
         margin: 14px 0;
         border: 1px solid var(--color-rule);
@@ -174,21 +173,21 @@ val exportCss: String = listOf(
     .line-toggle::after { content: "__EXPAND__"; }
     .line-card[open] .line-toggle::after { content: "__COLLAPSE__"; }
 
-    .line-pgn {    /* 摺疊列本身就是 PGN：收合時單行截斷，展開後完整換行 */
+    .line-pgn {    /* The collapsed row is the PGN itself: single-line truncated when collapsed, wraps fully when expanded */
         flex: 1;
         min-width: 0;
         font-family: var(--font-mono);
         font-size: 0.95rem;
         line-height: 1.7;
     }
-    .pgn-mark {    /* PGN 標記底色：暖米偏粉，搭配深酒紅字，對比約 10:1 */
+    .pgn-mark {    /* PGN highlight background: warm pinkish beige with dark wine text, contrast about 10:1 */
         background: #f7eee6;
         color: #5c2222;
         border-radius: 2px;
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
     }
-    .line-pgn .collapsed { display: flex; align-items: baseline; min-width: 0; }    /* 文字在邊界裁切，「.....」固定在右側，確保完整可見 */
+    .line-pgn .collapsed { display: flex; align-items: baseline; min-width: 0; }    /* Text is clipped at the edge so '.....' stays visible on the right */
     .line-pgn .collapsed .pgn-mark { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; }
     .pgn-dots { display: none; flex: none; padding-left: 4px; color: var(--color-ink-faint); }
     .collapsed.is-clipped .pgn-dots { display: block; }
@@ -205,12 +204,12 @@ val exportCss: String = listOf(
         background: #ffffff;
     }
 
-    /* ===== PGN 著法標記 ===== */
+    /* ### PGN move marks ### */
     .pgn-mv.live { cursor: pointer; border-radius: 2px; }
     .pgn-mv.live:hover { background: rgba(122, 46, 46, 0.14); }
     .pgn-mv.cur, .pgn-mv.cur:hover { background: var(--color-accent); color: #ffffff; font-weight: 700; }
 
-    /* ===== 符合的 Line ===== */
+    /* ### Matching Lines ### */
     .cb-match { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .cb-match:empty { display: none; }
     .cb-chip, .cb-toggle {
@@ -219,13 +218,13 @@ val exportCss: String = listOf(
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .cb-chip { color: var(--color-accent); background: var(--color-bg-panel); border: 1px solid var(--color-accent-soft); }
-    .cb-toggle { color: var(--color-ink-soft); background: transparent; border: 1px dashed var(--color-ink-faint); }    /* 與線名按鈕區隔：虛線、灰褐字、透明底 */
+    .cb-toggle { color: var(--color-ink-soft); background: transparent; border: 1px dashed var(--color-ink-faint); }    /* Dashed, muted, transparent: distinct from line-name buttons */
     .cb-chip:hover, .cb-toggle:hover { background: #ebe3d0; }
     .cb-foot { flex: 0 0 100%; display: flex; }
     @keyframes cbFlash { 0% { box-shadow: 0 0 0 3px var(--color-accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
     .line-card.cb-flash { animation: cbFlash 1.6s ease-out; }
 
-    /* ===== 互動棋盤 ===== */
+    /* ### Interactive board ### */
     .cb { width: 100%; margin: 0 auto; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .cb-start { max-width: 340px; }
     .cb-line { max-width: 300px; }
@@ -256,7 +255,7 @@ val exportCss: String = listOf(
     .cb-ctl button:not(:disabled):hover { background: #ebe3d0; }
     .cb-ctl button:disabled { opacity: 0.4; cursor: default; }
 
-    /* ===== 響應式（手機）===== */
+    /* ### Responsive (mobile) ### */
     @media (max-width: 600px) {
         .page { padding: 40px 18px 80px; }
         .opening-title { font-size: 1.7rem; }
@@ -265,7 +264,7 @@ val exportCss: String = listOf(
         .pgn-block, .line-pgn { font-size: 0.82rem; }
     }
 
-    /* ===== 列印樣式 ===== */
+    /* ### Print styles ### */
     @media print {
         body { background: #ffffff; }
         .page { padding: 0; max-width: 100%; }
@@ -273,8 +272,7 @@ val exportCss: String = listOf(
         .variant { break-before: auto; }
         .pgn-block { background: #f5f5f5; }
         a { color: inherit; text-decoration: none; }
-        /* 列印時展開所有折疊內容，確保紙本可讀 */
-        .line-pgn .collapsed { display: none; }
+        .line-pgn .collapsed { display: none; }    /* Expand all collapsed content so paper copies are readable */
         .line-pgn .expanded { display: block !important; }
         .line-board { display: block !important; }
         .line-toggle { display: none; }

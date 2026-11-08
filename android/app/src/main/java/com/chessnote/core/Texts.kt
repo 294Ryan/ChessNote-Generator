@@ -1,7 +1,6 @@
 package com.chessnote.core
 
-// 取自桌面版 core/i18n.py（僅手機版用到的鍵）+ 手機版新增的鍵
-object Texts {
+object Texts {    // Taken from desktop core/i18n.py (only keys used on mobile) + keys added for mobile
     val languages = listOf("zh-TW" to "繁體中文", "zh-CN" to "简体中文", "en" to "English", "ja" to "日本語", "ko" to "한국어", "es" to "Español", "ru" to "Русский", "de" to "Deutsch", "fr" to "Français")
 
     val data: Map<String, Map<String, String>> by lazy {

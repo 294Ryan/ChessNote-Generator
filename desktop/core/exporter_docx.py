@@ -6,20 +6,20 @@ from docx.oxml import OxmlElement
 from core.pgn_renderer import resolveImageBytes
 from core.i18n import t, getLanguage
 
-BODY_FONT = "Cambria"    # 襯線字體，呼應 html 版的出版品質感（僅影響英數字元）
-BODY_FONT_CJK = "PMingLiU"    # 新細明體，中文字元搭配用，襯線風格與 Cambria 呼應
-CJK_FONTS = {"zh-CN": "SimSun", "ja": "MS Mincho", "ko": "Batang"}    # 中日韓文字的襯線字型隨語言切換，其餘語言用 BODY_FONT_CJK
-PGN_FONT = "Consolas"    # 等寬字體，讓棋步對齊更整齊
-LINE_SIZE = Pt(12)    # Line PGN 字級
+BODY_FONT = "Cambria"    # Serif font echoing the HTML publication look (affects Latin characters only)
+BODY_FONT_CJK = "PMingLiU"    # PMingLiU for CJK characters; serif style matches Cambria
+CJK_FONTS = {"zh-CN": "SimSun", "ja": "MS Mincho", "ko": "Batang"}    # CJK serif font switches by language; other languages use BODY_FONT_CJK
+PGN_FONT = "Consolas"    # Monospace font so moves line up
+LINE_SIZE = Pt(12)
 PGN_SIZE = LINE_SIZE
 COLOR_BLACK = RGBColor(0x1a, 0x1a, 0x1a)
-COLOR_SUBCATEGORY = RGBColor(0x4a, 0x4a, 0x4a)    # 子分類標題灰色，比之前再深一點
-COLOR_PGN = RGBColor(0x8a, 0x35, 0x35)    # 柔和酒紅，與 html 版呼應但不搶眼
-PGN_HIGHLIGHT_FILL = "F6E3E3"    # PGN 底色，跟文字同色系的淡色調
-BOARD_WIDTH = Inches(5.5)    # 棋盤圖放大到接近版面全寬，方便實際讀譜
+COLOR_SUBCATEGORY = RGBColor(0x4a, 0x4a, 0x4a)
+COLOR_PGN = RGBColor(0x8a, 0x35, 0x35)    # Soft wine red, matches the HTML version
+PGN_HIGHLIGHT_FILL = "F6E3E3"    # PGN background: pale tint of the text color
+BOARD_WIDTH = Inches(5.5)    # Board image enlarged to near full page width for easier reading
 
 
-def setStyleEastAsiaFont(style, fontName):    # python-docx 的 font.name 只影響英數字元，中文需另外設定
+def setStyleEastAsiaFont(style, fontName):    # python-docx font.name only affects Latin characters; CJK must be set separately
     rPr = style.element.get_or_add_rPr()
     rFonts = rPr.find(qn("w:rFonts"))
     if rFonts is None:
@@ -28,7 +28,7 @@ def setStyleEastAsiaFont(style, fontName):    # python-docx 的 font.name 只影
     rFonts.set(qn("w:eastAsia"), fontName)
 
 
-def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
+def setupStyles(doc):    # Unify fonts across the document so Word defaults don't leak in
     cjkFont = CJK_FONTS.get(getLanguage(), BODY_FONT_CJK)
     normalStyle = doc.styles["Normal"]
     normalStyle.font.name = BODY_FONT
@@ -50,15 +50,13 @@ def setupStyles(doc):    # 統一全文字型，避免 Word 預設樣式跑掉
         headingStyle.font.color.rgb = color
         setStyleEastAsiaFont(headingStyle, cjkFont)
 
-    # Heading 1 的段前距離疊加頁面上邊界，導致標題離頁首過遠，歸零修正
-    doc.styles["Heading 1"].paragraph_format.space_before = Pt(0)
+    doc.styles["Heading 1"].paragraph_format.space_before = Pt(0)    # Heading 1 space-before stacks on the page top margin, pushing the title too far down; zero it
 
-    # 頁面上邊界也一併收緊，讓標題視覺上更貼近頁首
-    for section in doc.sections:
+    for section in doc.sections:    # Tighten the top page margin too so the title sits closer to the top
         section.top_margin = Inches(0.75)
 
 
-def addHorizontalRule(doc):    # 段落下框線模擬分隔線，取代表格
+def addHorizontalRule(doc):    # Paragraph bottom border acts as a divider instead of a table
     paragraph = doc.add_paragraph()
     pPr = paragraph._p.get_or_add_pPr()
     pBdr = OxmlElement("w:pBdr")
@@ -71,11 +69,11 @@ def addHorizontalRule(doc):    # 段落下框線模擬分隔線，取代表格
     pPr.append(pBdr)
 
 
-def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 同色系淡底，前後留一格空白讓底色不會貼著文字
+def addPgnParagraph(doc, pgnText):    # PGN: monospace + soft wine red + tinted background; padded with a space on each side so the background doesn't touch the text
     paragraph = doc.add_paragraph()
-    run = paragraph.add_run(f"\u00A0{pgnText}\u00A0")    # 用不換行空白，普通空白在段尾會被 Word 吃掉
+    run = paragraph.add_run(f"\u00A0{pgnText}\u00A0")    # Use non-breaking spaces; Word drops regular spaces at paragraph ends
     run.font.name = PGN_FONT
-    run.font.size = PGN_SIZE    # 明確鎖定大小，不受 Normal 字級調整影響
+    run.font.size = PGN_SIZE    # Lock the size so Normal style changes don't affect it
     run.font.color.rgb = COLOR_PGN
     rPr = run._element.get_or_add_rPr()
     rFonts = rPr.find(qn("w:rFonts"))
@@ -93,12 +91,12 @@ def addPgnParagraph(doc, pgnText):    # PGN 用等寬字體 + 柔和酒紅色 + 
 
 
 def addImageIfExists(doc, pgn, imageData, orientation, noImage, startingPgn=""):
-    rawBytes = resolveImageBytes(pgn, imageData, orientation, noImage, startingPgn, htmlStyle=True)    # 與 html 相同的棋盤樣式
+    rawBytes = resolveImageBytes(pgn, imageData, orientation, noImage, startingPgn, htmlStyle=True)    # Same board style as the HTML
     if rawBytes:
         doc.add_picture(io.BytesIO(rawBytes), width=BOARD_WIDTH)
 
 
-def addDescriptionIfExists(doc, obj, color=None):    # 直接顯示說明正文，不加標籤文字（比照 html 版）
+def addDescriptionIfExists(doc, obj, color=None):    # Show the description body directly with no label (same as HTML)
     if obj.description:
         paragraph = doc.add_paragraph()
         run = paragraph.add_run(obj.description)
@@ -129,7 +127,7 @@ def exportDocx(opening, outputPath):
         doc.add_heading(variant.name, level=2)
         addDescriptionIfExists(doc, variant)
 
-        for line in variant.lines:    # Line 排在子分類之前
+        for line in variant.lines:    # Lines come before subcategories
             addLineSection(doc, line, opening.orientation, opening.startingPgn)
 
         for sub in variant.subCategories:

@@ -1,4 +1,4 @@
-# 自繪提示框：showInfo / showConfirm，色票取自 theme.palette()，切換主題後自動套用
+# Custom dialogs: showInfo / showConfirm; colors come from theme.palette() and follow theme switches
 from PyQt5.QtCore import Qt, QPointF, QRectF
 from PyQt5.QtGui import QPainter, QColor, QPen, QPolygonF
 from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout
@@ -7,10 +7,10 @@ from core.i18n import t
 
 ACCENT = "#7a2e2e"
 DANGER_FILL = "#b91c1c"
-DISCARD_CODE = 2    # 「不儲存」按鈕的結果碼（QDialog.Accepted = 1、Rejected = 0）
+DISCARD_CODE = 2    # Result code of the 'Don't save' button (QDialog.Accepted = 1, Rejected = 0)
 
 
-class Overlay(QWidget):    # 蓋住主視窗的半透明遮罩
+class Overlay(QWidget):
     def __init__(self, host):
         super().__init__(host)
         self.setGeometry(host.rect())
@@ -20,7 +20,7 @@ class Overlay(QWidget):    # 蓋住主視窗的半透明遮罩
         p.fillRect(self.rect(), QColor(0, 0, 0, 90 if theme.isDark() else 60))
 
 
-class IconBadge(QWidget):    # 圓形底 + 線條圖示（check / warn）
+class IconBadge(QWidget):
     def __init__(self, kind, color):
         super().__init__()
         self.kind = kind
@@ -53,7 +53,7 @@ class CustomDialog(QDialog):
     def __init__(self, host, title, message, kind, confirmText, showCancel, danger, discardText=None):
         super().__init__(host, Qt.Dialog | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedWidth(420 if discardText else 300)    # 三個按鈕時加寬，避免較長的翻譯被擠壓
+        self.setFixedWidth(420 if discardText else 300)    # Wider with three buttons so longer translations aren't squeezed
         p = theme.palette()
         self.bgColor = QColor(p.cardBg)
         self.borderColor = QColor(p.cardBorder)
@@ -89,7 +89,7 @@ class CustomDialog(QDialog):
             cancelButton.clicked.connect(self.reject)
             buttonLayout.addWidget(cancelButton)
 
-        if discardText:    # 「不儲存」：透明底、紅字紅框，夾在取消與主要按鈕之間
+        if discardText:    # Don't save: red outline, between Cancel and the primary button
             discardButton = QPushButton(discardText)
             discardButton.setStyleSheet(self.buttonStyle("transparent", p.danger, p.danger, p.hoverBg))
             discardButton.clicked.connect(lambda: self.done(DISCARD_CODE))
@@ -125,10 +125,10 @@ class CustomDialog(QDialog):
         self.adjustSize()
         host = self.parentWidget()
         center = host.mapToGlobal(host.rect().center())
-        self.move(center - self.rect().center())    # 置中於主視窗
+        self.move(center - self.rect().center())
 
 
-def runDialogCode(parent, title, message, kind, confirmText, showCancel, danger, discardText=None):    # 回傳結果碼
+def runDialogCode(parent, title, message, kind, confirmText, showCancel, danger, discardText=None):
     host = parent.window()
     overlay = Overlay(host)
     overlay.show()
@@ -146,11 +146,11 @@ def showInfo(parent, title, message):
     runDialog(parent, title, message, "check", t("ok"), False, False)
 
 
-def showConfirm(parent, title, message, confirmText=None, danger=False, kind="warn"):    # 回傳 True 表示按下確認；kind 為 warn（三角警示）或 check（勾勾）
+def showConfirm(parent, title, message, confirmText=None, danger=False, kind="warn"):    # Returns True if confirmed; kind is warn (triangle) or check (tick)
     return runDialog(parent, title, message, kind, confirmText or t("ok"), True, danger)
 
 
-def showSaveChoice(parent, title, message, saveText, discardText):    # 回傳 "save" / "discard" / "cancel"（Esc 視為 cancel）
+def showSaveChoice(parent, title, message, saveText, discardText):    # Returns "save" / "discard" / "cancel" (Esc counts as cancel)
     code = runDialogCode(parent, title, message, "warn", saveText, True, False, discardText)
     if code == QDialog.Accepted:
         return "save"

@@ -1,7 +1,7 @@
 import os
 import sys
 import ctypes
-### 修正中文路徑下 Qt 平台外掛找不到的問題，需在 import PyQt5.QtWidgets 之前設定 ###
+### Fix Qt plugin lookup on non-ASCII paths (set before importing PyQt5.QtWidgets) ###
 import PyQt5
 pluginPath = os.path.join(os.path.dirname(PyQt5.__file__), "Qt5", "plugins")
 os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = pluginPath
@@ -12,25 +12,25 @@ from ui.main_window import MainWindow
 from core.i18n import setLanguage
 
 def loadAppFont(app):
-    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))    # 打包後與原始碼兩種環境
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))    # Works both frozen and from source
     fontId = QFontDatabase.addApplicationFont(os.path.join(base, "assets", "fonts", "NotoSansTC-Regular.ttf"))
     if fontId == -1:
-        return    # 找不到字型檔時沿用系統預設
-    font = app.font()    # 只換字型家族，保留原本字級
+        return    # Fall back to the system default font if the file is missing
+    font = app.font()    # Change the family only; keep the original size
     font.setFamily(QFontDatabase.applicationFontFamilies(fontId)[0])
     app.setFont(font)
 
 def setAppIcon(app):
-    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))    # 打包後與原始碼兩種環境
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))    # Works both frozen and from source
     app.setWindowIcon(QIcon(os.path.join(base, "assets", "icons", "window_icon.ico")))
 
 def main():
     if sys.platform == "win32":
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ChessNoteGenerator")    # 工作列不再歸在 python.exe 底下
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ChessNoteGenerator")    # Keep the taskbar icon separate from python.exe
     app = QApplication(sys.argv)
-    setAppIcon(app)    # 左上角與工作列都吃這個
+    setAppIcon(app)    # Used for both the title bar and the taskbar
     loadAppFont(app)
-    setLanguage("en")    # 每次啟動固定用英文，不記住上次選擇
+    setLanguage("en")    # Always start in English; the last choice is not remembered
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())

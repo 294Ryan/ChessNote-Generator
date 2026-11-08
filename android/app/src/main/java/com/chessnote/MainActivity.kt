@@ -77,19 +77,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private val state = AppState()    // manifest 已設定 configChanges，旋轉螢幕不會重建 Activity，狀態不會遺失
-    private var printWebView: WebView? = null    // 列印期間要保留參照，避免被回收
+    private val state = AppState()    // configChanges is set in the manifest, so rotation doesn't recreate the Activity and state survives
+    private var printWebView: WebView? = null    // Keep a reference during printing so it isn't garbage collected
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val boardSvg = BoardSvg(assets.open("pieces.json").bufferedReader().use { it.readText() })
         val exporter = Exporter(boardSvg)
-        I18n.load(this)    // 還原上次選的語言（第一次啟動預設英文）
-        if (!Backup.restore(this, state)) state.load(Opening(), null, null, null)    // 還原上次編輯到一半的筆記；沒有就開空白筆記
+        I18n.load(this)    // Restore the last chosen language (English on first launch)
+        if (!Backup.restore(this, state)) state.load(Opening(), null, null, null)    // Restore the note being edited last time; open a blank note if none
         setContent {
             val systemDark = isSystemInDarkTheme()
-            var showWelcome by remember { mutableStateOf(!AppPrefs.welcomeDone(this)) }    // 只有第一次啟動會顯示歡迎畫面
-            var dark by remember { mutableStateOf(AppPrefs.darkTheme(this) ?: systemDark) }    // 用過的主題會記住；還沒選過就跟隨系統
+            var showWelcome by remember { mutableStateOf(!AppPrefs.welcomeDone(this)) }
+            var dark by remember { mutableStateOf(AppPrefs.darkTheme(this) ?: systemDark) }    // A used theme is remembered; otherwise follow the system
             val palette = if (dark) DarkPalette else LightPalette
             MaterialTheme(colorScheme = colorSchemeOf(palette)) {
                 CompositionLocalProvider(LocalPalette provides palette) {
@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity() {
                     }) {
                         val next = !dark
                         dark = next
-                        AppPrefs.saveDarkTheme(this, next)    // 記住主題，下次啟動沿用
+                        AppPrefs.saveDarkTheme(this, next)
                     }
                 }
             }
@@ -113,7 +113,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        Backup.save(this, state)    // 跳離或關閉 app 前自動備份，下次啟動還原
+        Backup.save(this, state)    // Back up automatically before leaving or closing the app; restored on next launch
     }
 
     fun readText(uri: Uri): String = contentResolver.openInputStream(uri)!!.bufferedReader().use { it.readText() }
@@ -121,16 +121,15 @@ class MainActivity : ComponentActivity() {
     fun writeText(uri: Uri, text: String) = writeBytes(uri, text.toByteArray(Charsets.UTF_8))
 
     fun writeBytes(uri: Uri, bytes: ByteArray) {
-        contentResolver.openOutputStream(uri, "wt")!!.use { it.write(bytes) }    // "wt" 會先清空舊內容
+        contentResolver.openOutputStream(uri, "wt")!!.use { it.write(bytes) }    // "wt" truncates existing content first
     }
 
     fun displayName(uri: Uri): String? =
         contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { if (it.moveToFirst()) it.getString(0) else null }
 
-    // PDF：用 WebView 列印，在系統列印畫面選「儲存為 PDF」並指定位置
-    fun printAsPdf(html: String, jobName: String) {
+    fun printAsPdf(html: String, jobName: String) {    // PDF: print via WebView; choose 'Save as PDF' in the system print dialog and pick a location
         val webView = WebView(this)
-        webView.settings.javaScriptEnabled = true    // 棋盤由 JavaScript 繪製，要等它跑完才列印
+        webView.settings.javaScriptEnabled = true    // The board is drawn by JavaScript; wait for it to finish before printing
         var started = false
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String?) {
@@ -138,7 +137,7 @@ class MainActivity : ComponentActivity() {
                 started = true
                 val attributes = PrintAttributes.Builder()
                     .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-                    .setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))    // 邊距改由 HTML 的 @page 控制（8mm）
+                    .setMinMargins(PrintAttributes.Margins(0, 0, 0, 0))    // Margins are controlled by the HTML @page rule (8mm)
                     .build()
                 (getSystemService(Context.PRINT_SERVICE) as PrintManager).print(jobName, view.createPrintDocumentAdapter(jobName), attributes)
             }
@@ -165,15 +164,15 @@ private fun AppContent(
     var menuOpen by remember { mutableStateOf(false) }
     var showUnsaved by remember { mutableStateOf(false) }
     var showLanguage by remember { mutableStateOf(false) }
-    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }    // 「尚未儲存」詢問後要接著做的事
-    var afterSave by remember { mutableStateOf<(() -> Unit)?>(null) }    // 另存新檔成功後要接著做的事
+    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }    // Action to run after the 'unsaved changes' prompt
+    var afterSave by remember { mutableStateOf<(() -> Unit)?>(null) }    // Action to run after Save As succeeds
 
     fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 
     val openLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             try {
-                val loaded = ProjectFile.parse(activity.readText(uri))    // 先驗證；不合格就不動目前的內容
+                val loaded = ProjectFile.parse(activity.readText(uri))    // Validate first; don't touch the current content if invalid
                 runCatching {
                     context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                 }
@@ -189,13 +188,13 @@ private fun AppContent(
     val saveAsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val o = state.opening
         if (uri == null || o == null) {
-            afterSave = null    // 使用者取消另存，連同後續動作一併取消
+            afterSave = null    // User cancelled Save As; cancel the follow-up action too
         } else {
             try {
                 activity.writeText(uri, o.toJson().toString(2))
                 runCatching {
                     context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                }    // 讓下次啟動還原備份後仍能直接儲存到同一個檔案
+                }    // So that after restoring a backup on next launch, saving still goes to the same file
                 state.currentUri = uri
                 state.currentKind = ProjectFile.KIND_JSON
                 state.fileName = activity.displayName(uri)
@@ -209,8 +208,7 @@ private fun AppContent(
         }
     }
 
-    // 匯出：先複製一份資料，到背景執行緒產生檔案，避免與編輯衝突
-    fun exportTo(uri: Uri, build: (Opening) -> ByteArray) {
+    fun exportTo(uri: Uri, build: (Opening) -> ByteArray) {    // Export: copy the data first, then generate the file on a background thread to avoid conflicts with editing
         val o = state.opening ?: return
         val copy = Opening.parse(o.toJson().toString())
         toast(S.exporting)
@@ -226,7 +224,7 @@ private fun AppContent(
     }
 
     val htmlLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/html")) { uri ->
-        if (uri != null) exportTo(uri) { exporter.html(it, embedProject = true).toByteArray(Charsets.UTF_8) }    // 內嵌專案資料，之後可開回編輯器
+        if (uri != null) exportTo(uri) { exporter.html(it, embedProject = true).toByteArray(Charsets.UTF_8) }    // Embed project data so the file can be reopened in the editor
     }
     val docxLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
@@ -241,7 +239,7 @@ private fun AppContent(
         val copy = Opening.parse(o.toJson().toString())
         toast(S.exporting)
         scope.launch {
-            val html = withContext(Dispatchers.Default) { exporter.html(copy, forPdf = true) }    // PDF 一律展開所有 Line
+            val html = withContext(Dispatchers.Default) { exporter.html(copy, forPdf = true) }    // PDF always expands every Line
             activity.printAsPdf(html, baseName())
         }
     }
@@ -251,8 +249,7 @@ private fun AppContent(
         saveAsLauncher.launch(baseName() + ".json")
     }
 
-    // 儲存變更：目前檔案是暫存檔就寫回 json，是筆記就重新產生並覆寫 html；還沒存過的新筆記則走「另存暫存檔」
-    fun saveChanges(next: (() -> Unit)?) {
+    fun saveChanges(next: (() -> Unit)?) {    // Save changes: a draft is written back as json, a note is regenerated and overwrites the html; a new unsaved note goes through Save As (draft)
         val o = state.opening ?: return
         val uri = state.currentUri
         if (uri == null) {
@@ -295,7 +292,7 @@ private fun AppContent(
     }
 
     BackHandler {
-        if (!showWelcome && state.backStack.size > 1) state.pop() else activity.finish()    // 離開不再詢問，未存成檔案的修改由自動備份保留
+        if (!showWelcome && state.backStack.size > 1) state.pop() else activity.finish()    // Leaving doesn't prompt; unsaved changes are kept by the automatic backup
     }
 
     val route = state.backStack.last()
@@ -338,7 +335,7 @@ private fun AppContent(
                                 menuOpen = false
                                 guardUnsaved { openLauncher.launch(arrayOf("application/json", "text/html", "*/*")) }
                             })
-                            if (state.currentUri != null) {    // 新筆記還沒有檔案，不顯示
+                            if (state.currentUri != null) {    // A new note has no file yet, so this is hidden
                                 DropdownMenuItem(text = { Text(S.menuSaveChanges) }, onClick = {
                                     menuOpen = false
                                     saveChanges(null)
@@ -382,8 +379,7 @@ private fun AppContent(
         }
     }) { padding ->
         Box(Modifier.padding(padding)) {
-            // 進入下一層：新畫面從右側滑入、舊畫面往左退；返回則反向
-            AnimatedContent(
+            AnimatedContent(    // Going deeper: new screen slides in from the right, old one exits left; reversed on back
                 targetState = route,
                 transitionSpec = {
                     val duration = 260
@@ -397,7 +393,7 @@ private fun AppContent(
                 },
                 label = "screen",
             ) { target ->
-                key(target, opening) {    // 換頁或換筆記時重置各輸入框的暫存文字
+                key(target, opening) {    // Reset each input's temporary text when the page or note changes
                     if (opening != null) {
                         when (target) {
                             is Route.Root -> RootScreen(state, boardSvg)

@@ -5,18 +5,17 @@ import android.util.Base64
 import org.json.JSONArray
 import org.json.JSONObject
 
-class InvalidProjectFile : Exception()    // 非法檔案：格式不符或內容不合格
+class InvalidProjectFile : Exception()    // Invalid file: wrong format or failed validation
 
-class LoadedProject(val opening: Opening, val kind: String)    // kind：KIND_JSON（暫存檔）或 KIND_HTML（筆記）
+class LoadedProject(val opening: Opening, val kind: String)    // kind: KIND_JSON (draft) or KIND_HTML (note)
 
-// 讀入暫存檔（.json）或筆記（.html）：用內容判斷類型，並一律當成不可信輸入逐項驗證，不合格丟出 InvalidProjectFile
-object ProjectFile {
+object ProjectFile {    // Load a draft (.json) or note (.html): detect the type from content, validate everything as untrusted input, throw InvalidProjectFile on failure
     const val KIND_JSON = "json"
     const val KIND_HTML = "html"
     private const val SUPPORTED_VERSION = 1
     private const val MAX_FILE_CHARS = 80_000_000
     private const val MAX_TEXT = 1_000_000
-    private const val MAX_IMAGE = 30_000_000    // base64 字元數
+    private const val MAX_IMAGE = 30_000_000    // Base64 character count
     private const val MAX_PIXELS = 40_000_000L
     private const val MAX_NODES = 50_000
     private const val MARKER = "data-format=\"chessnote-project\""
@@ -32,12 +31,11 @@ object ProjectFile {
         } catch (e: InvalidProjectFile) {
             throw e
         } catch (e: Exception) {
-            throw InvalidProjectFile()    // JSON 解析失敗等一律視為非法檔案
+            throw InvalidProjectFile()    // JSON parse failure etc. all count as an invalid file
         }
     }
 
-    // 只擷取筆記裡的專案資料區塊，不執行網頁中的任何程式碼
-    private fun extractProjectBlock(html: String): String {
+    private fun extractProjectBlock(html: String): String {    // Extract only the project data block from the note; never run any code in the page
         val markerPos = html.indexOf(MARKER)
         if (markerPos < 0) throw InvalidProjectFile()
         val tagStart = html.lastIndexOf("<script", markerPos)
@@ -75,8 +73,7 @@ object ProjectFile {
         return (0 until value.length()).map { (value.get(it) as? JSONObject) ?: throw InvalidProjectFile() }
     }
 
-    // 上傳圖必須是能解碼的圖片，且尺寸不能大到載入時耗盡記憶體
-    private fun checkImage(data: String?) {
+    private fun checkImage(data: String?) {    // Uploaded images must be decodable and small enough not to exhaust memory when loaded
         if (data == null) return
         val bytes = try {
             Base64.decode(data, Base64.DEFAULT)
@@ -92,7 +89,7 @@ object ProjectFile {
         val usedIds = HashSet<String>()
         var nodes = 0
 
-        fun idOf(o: JSONObject): String {    // 節點計數、id 缺漏或重複就重新產生
+        fun idOf(o: JSONObject): String {    // Node counter; regenerate ids that are missing or duplicated
             if (++nodes > MAX_NODES) throw InvalidProjectFile()
             val given = o.text("id", 100, false) ?: ""
             val id = if (given.isNotBlank() && !usedIds.contains(given)) given else newId()

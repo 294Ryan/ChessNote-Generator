@@ -9,7 +9,7 @@ fun newId(): String = UUID.randomUUID().toString()
 private fun JSONObject.strOrNull(key: String): String? = if (!has(key) || isNull(key)) null else getString(key)
 
 private fun JSONObject.putNullable(key: String, value: String?) {
-    put(key, value ?: JSONObject.NULL)    // org.json 的 put(key, null) 會刪掉欄位，要用 NULL
+    put(key, value ?: JSONObject.NULL)    // org.json put(key, null) removes the field; use NULL
 }
 
 private fun <T> JSONArray.toList(parse: (JSONObject) -> T): MutableList<T> {
@@ -22,12 +22,12 @@ private fun <T> JSONArray.toList(parse: (JSONObject) -> T): MutableList<T> {
 
 class Line(var pgn: String = "", var imagePath: String? = null, var noImage: Boolean = false) {
     var id: String = newId()
-    var imageData: String? = null    // 手機版專用：上傳圖片的 base64，桌面版讀檔時忽略
+    var imageData: String? = null    // Mobile only: base64 of the uploaded image; ignored by desktop when loading
 
     fun toJson() = JSONObject().apply {
         put("id", id)
         put("pgn", pgn)
-        putNullable("imagePath", imagePath)    // 桌面版路徑原樣保留，來回存檔不遺失
+        putNullable("imagePath", imagePath)    // Desktop path preserved as-is so round-trips don't lose it
         put("noImage", noImage)
         imageData?.let { put("imageData", it) }
     }
@@ -83,7 +83,7 @@ class Variant(var name: String = "", var description: String = "") {
 
 class Opening(var name: String = "", var description: String = "", var startingPgn: String = "") {
     var startingImagePath: String? = null
-    var startingImageData: String? = null    // 手機版專用，同 Line.imageData
+    var startingImageData: String? = null    // Mobile only, same as Line.imageData
     var startingNoImage = false
     var orientation = "white"    // white / black
     val variants = mutableListOf<Variant>()

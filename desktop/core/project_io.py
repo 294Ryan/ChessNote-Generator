@@ -3,18 +3,18 @@ import re
 from core.models import Opening, Variant, SubCategory, Line, newId
 from core.image_utils import imageSize, loadScaledBase64
 
-KIND_JSON = "json"    # 暫存檔
-KIND_HTML = "html"    # 筆記（內嵌專案資料的 html）
+KIND_JSON = "json"    # Draft file
+KIND_HTML = "html"    # Note (HTML with embedded project data)
 SUPPORTED_VERSION = 1
 MAX_FILE_CHARS = 80_000_000
 MAX_TEXT = 1_000_000
-MAX_IMAGE = 30_000_000    # base64 字元數
+MAX_IMAGE = 30_000_000    # Base64 character count
 MAX_PIXELS = 40_000_000
 MAX_NODES = 50_000
 MARKER = 'data-format="chessnote-project"'
 
 
-class InvalidProjectFile(Exception):    # 非法檔案：格式不符或內容不合格
+class InvalidProjectFile(Exception):    # Invalid file: wrong format or failed validation
     pass
 
 
@@ -23,8 +23,8 @@ def saveProject(opening, filePath):
         json.dump(opening.toDict(), f, ensure_ascii=False, indent=2)
 
 
-def loadProject(filePath):    # 回傳 (Opening, kind)；內容一律當成不可信輸入驗證，不合格丟 InvalidProjectFile
-    with open(filePath, "r", encoding="utf-8", errors="replace") as f:    # 二進位檔解碼後會變亂碼，自然被判為非法
+def loadProject(filePath):    # Returns (Opening, kind); content is always validated as untrusted input; raises InvalidProjectFile on failure
+    with open(filePath, "r", encoding="utf-8", errors="replace") as f:    # Binary files decode to garbage and are naturally rejected as invalid
         opening, kind = parseProject(f.read())
     migrateLegacyImages(opening)
     return opening, kind
@@ -41,10 +41,10 @@ def parseProject(text):
     except InvalidProjectFile:
         raise
     except Exception:
-        raise InvalidProjectFile()    # json 解析失敗、巢狀過深等一律視為非法檔案
+        raise InvalidProjectFile()    # JSON parse failure, excessive nesting, etc. all count as an invalid file
 
 
-def extractProjectBlock(html):    # 只擷取筆記裡的專案資料區塊，不執行網頁中的任何程式碼
+def extractProjectBlock(html):    # Extract only the project data block from the note; never run any code in the page
     markerPos = html.find(MARKER)
     if markerPos < 0:
         raise InvalidProjectFile()
@@ -61,7 +61,7 @@ def extractProjectBlock(html):    # 只擷取筆記裡的專案資料區塊，�
     return html[tagEnd + 1:end]
 
 
-### 欄位驗證 ###
+### Field validation ###
 def getText(obj, key, maxLength, required):
     if obj.get(key) is None:
         if required:
@@ -90,7 +90,7 @@ def getObjects(obj, key):
     return value
 
 
-def checkImage(data):    # 上傳圖必須是能解碼的圖片，且尺寸不能大到載入時耗盡記憶體
+def checkImage(data):    # Uploaded images must be decodable and small enough not to exhaust memory when loaded
     if data is None:
         return
     size = imageSize(data)
@@ -104,7 +104,7 @@ def validate(root):
     usedIds = set()
     nodeCount = 0
 
-    def idOf(obj):    # 節點計數；id 缺漏或重複就重新產生
+    def idOf(obj):    # Node counter; regenerate ids that are missing or duplicated
         nonlocal nodeCount
         nodeCount += 1
         if nodeCount > MAX_NODES:
@@ -143,8 +143,8 @@ def validate(root):
     return opening
 
 
-### 舊存檔相容 ###
-def migrateLegacyImages(opening):    # 舊存檔只有本機圖片路徑：檔案還在就轉成內嵌；找不到就保留原路徑，顯示時退回自動生成圖
+### Legacy save compatibility ###
+def migrateLegacyImages(opening):    # Old saves only have local image paths: embed if the file still exists; otherwise keep the path and fall back to the auto-generated image when displayed
     holders = [opening]
     for variant in opening.variants:
         holders += variant.lines

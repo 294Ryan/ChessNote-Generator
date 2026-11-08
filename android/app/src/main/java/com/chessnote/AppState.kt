@@ -22,23 +22,23 @@ sealed class Route {
 class AppState {
     var opening by mutableStateOf<Opening?>(null)
     var currentUri by mutableStateOf<Uri?>(null)
-    var currentKind by mutableStateOf<String?>(null)    // 目前檔案類型："json"（暫存檔）、"html"（筆記）；尚未存檔的新筆記為 null
+    var currentKind by mutableStateOf<String?>(null)    // Current file kind: "json" (draft) or "html" (note); null for a new unsaved note
     var fileName by mutableStateOf<String?>(null)
     var savedSnapshot by mutableStateOf("")
-    private var tick by mutableIntStateOf(0)    // 資料物件不是 Compose 狀態，每次修改靠它通知畫面重繪
+    private var tick by mutableIntStateOf(0)    // Data objects aren't Compose state; this triggers a redraw on every change
     val backStack = mutableStateListOf<Route>(Route.Root)
-    var navForward = true    // 最近一次換頁是進入下一層（true）還是返回（false），決定轉場動畫的方向
+    var navForward = true    // Whether the last navigation went deeper (true) or back (false); decides the transition direction
 
     fun touch() {
         tick++
     }
 
-    fun observe(): Int = tick    // 畫面讀取它即訂閱資料變動
+    fun observe(): Int = tick    // Reading it in a screen subscribes to data changes
 
     val isDirty: Boolean
         get() {
             val o = opening ?: return false
-            return tick >= 0 && o.toJson().toString() != savedSnapshot    // 以內容快照比對，跟桌面版一致
+            return tick >= 0 && o.toJson().toString() != savedSnapshot    // Compare content snapshots, same as desktop
         }
 
     fun load(o: Opening, uri: Uri?, name: String?, kind: String?) {
@@ -52,14 +52,12 @@ class AppState {
         backStack.add(Route.Root)
     }
 
-    // 還原自動備份：連「尚未儲存成檔案」的狀態一起還原
-    fun restore(o: Opening, uri: Uri?, name: String?, kind: String?, snapshot: String) {
+    fun restore(o: Opening, uri: Uri?, name: String?, kind: String?, snapshot: String) {    // Restore the automatic backup, including the 'not yet saved to a file' state
         load(o, uri, name, kind)
         savedSnapshot = snapshot
     }
 
-    // snapshot：存檔當下的內容快照；非同步存檔時要傳入，才不會把存檔期間的新修改誤判為已存
-    fun markSaved(snapshot: String? = null) {
+    fun markSaved(snapshot: String? = null) {    // snapshot: content at save time; pass it for async saves so edits made during saving aren't treated as saved
         savedSnapshot = snapshot ?: opening?.toJson()?.toString() ?: ""
         tick++
     }

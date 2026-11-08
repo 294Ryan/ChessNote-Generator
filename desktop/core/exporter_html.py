@@ -8,24 +8,24 @@ from jinja2 import Environment, FileSystemLoader
 from core.pgn_renderer import resolvePgn
 from core.i18n import t, getLanguage
 
-def buildImageDataUri(imageData, noImage):    # 只用於手動上傳圖；自動生成圖改由 html 內的互動棋盤繪製
+def buildImageDataUri(imageData, noImage):    # Only for manually uploaded images; auto-generated images are drawn by the interactive board in the HTML
     if noImage or not imageData:
         return None
     return f"data:image/png;base64,{imageData}"
 
 
-def extractMoves(pgn, startingPgn=""):    # 回傳 (起始 FEN（標準開局為空字串）, UCI 著法清單)；PGN 無法解析回傳 None
+def extractMoves(pgn, startingPgn=""):    # Returns (starting FEN (empty string for the standard start), UCI move list); None if the PGN can't be parsed
     game = chess.pgn.read_game(io.StringIO(resolvePgn(pgn, startingPgn)))
     if game is None:
         return None
 
     board = game.board()
     startFen = "" if board.fen() == chess.STARTING_FEN else board.fen()
-    moves = [move.uci() for move in game.mainline_moves()]    # 只取主線，走到出錯之前為止
+    moves = [move.uci() for move in game.mainline_moves()]    # Main line only, up to the first error
     return startFen, moves
 
 
-def buildPieceDefs():    # 以 python-chess 內建棋子 SVG 組成 symbol，與編輯器預覽用同一套棋子
+def buildPieceDefs():    # Build symbols from python-chess's built-in piece SVGs, same set as the editor preview
     return "".join(f'<symbol id="pc-{key}" viewBox="0 0 45 45">{svg}</symbol>' for key, svg in chess.svg.PIECES.items())
 
 
@@ -33,12 +33,12 @@ def buildBoardJson(orientation, lines):
     data = {
         "o": orientation,
         "l": lines,
-        "t": {"viewAll": t("boardViewAll", n="{n}"), "collapse": t("collapse")},    # {n} 由 JS 代入符合的 Line 數
+        "t": {"viewAll": t("boardViewAll", n="{n}"), "collapse": t("collapse")},    # {n} is filled in by JS with the number of matching Lines
     }
-    return json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")    # 避免資料中出現 </script> 破壞頁面
+    return json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")    # Prevents </script> in the data from breaking the page
 
 
-def buildProjectJson(opening):    # 內嵌在筆記裡的專案資料：格式同暫存檔，但不帶本機圖片路徑；之後可在編輯器開啟這份筆記繼續編輯
+def buildProjectJson(opening):    # Project data embedded in the note: same format as the draft file but without local image paths; the note can be reopened in the editor
     data = opening.toDict()
     data["startingImagePath"] = None
     for variant in data["variants"]:
@@ -47,14 +47,14 @@ def buildProjectJson(opening):    # 內嵌在筆記裡的專案資料：格式�
         for sub in variant["subCategories"]:
             for line in sub["lines"]:
                 line["imagePath"] = None
-    return json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")    # 避免資料中出現 </script> 提早結束區塊
+    return json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")    # Prevents </script> in the data from ending the block early
 
 
 def buildContext(opening, templateDir):
-    lines = []    # 全部 Line 的 [起始 FEN, 著法, 與起始 PGN 相同的手數, 是否需截斷顯示文字]
+    lines = []    # All Lines as [starting FEN, moves, move count shared with the starting PGN, whether to trim the displayed text]
     starting = {"fen": "", "moves": []}
 
-    def registerLine(pgn, isStarting=False):    # 回傳在 lines 中的索引；空白或無法解析回傳 None
+    def registerLine(pgn, isStarting=False):    # Returns the index in lines; None if blank or unparseable
         if not pgn.strip():
             return None
         startingPgn = "" if isStarting else opening.startingPgn
@@ -65,8 +65,8 @@ def buildContext(opening, templateDir):
         fen, moves = parsed
         skip = len(starting["moves"])
         if not (skip and fen == starting["fen"] and len(moves) > skip and moves[:skip] == starting["moves"]):
-            skip = 0    # 沒有以起始 PGN 開頭（或沒有多出新著法）就不截斷
-        cut = 1 if skip and resolvePgn(pgn, startingPgn) == pgn else 0    # 完整寫法才需要截掉文字；接續寫法本來就是從起始 PGN 之後開始
+            skip = 0    # Not trimmed if it doesn't start with the starting PGN (or adds no new moves)
+        cut = 1 if skip and resolvePgn(pgn, startingPgn) == pgn else 0    # Only full-form Lines need trimming; continuation form already starts after the starting PGN
         lines.append([fen, " ".join(moves), skip, cut])
         return len(lines) - 1
 
@@ -122,7 +122,7 @@ def buildContext(opening, templateDir):
 
 def buildLineContext(line, orientation, registerLine):
     pgn = line.pgn
-    index = registerLine(pgn)    # 每條 Line 都登記，即使用了手動圖也要讓起始局面棋盤看得到它的分支
+    index = registerLine(pgn)    # Register every Line, even those with a manual image, so the starting-position board shows its branches
 
     isAuto = not line.imageData and not line.noImage
     return {
@@ -135,7 +135,7 @@ def buildLineContext(line, orientation, registerLine):
 
 def exportHtml(opening, outputPath, templateDir=None):
     templateDir = templateDir or os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
-    env = Environment(loader=FileSystemLoader(templateDir), autoescape=True)    # 使用者輸入的名稱、說明、PGN 一律跳脫
+    env = Environment(loader=FileSystemLoader(templateDir), autoescape=True)    # User-entered names, descriptions and PGN are always escaped
     template = env.get_template("opening_note.html.j2")
 
     html = template.render(opening=buildContext(opening, templateDir))

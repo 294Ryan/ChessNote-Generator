@@ -2,8 +2,7 @@ package com.chessnote.core
 
 import android.content.Context
 
-// 需要跨次啟動記住的小設定：介面語言、主題、是否已看過歡迎畫面
-object AppPrefs {
+object AppPrefs {    // Small settings remembered across launches: language, theme, whether the welcome screen was seen
     private fun prefs(context: Context) = context.getSharedPreferences("chessnote_prefs", Context.MODE_PRIVATE)
 
     fun language(context: Context): String? = prefs(context).getString("lang", null)
@@ -12,8 +11,7 @@ object AppPrefs {
         prefs(context).edit().putString("lang", code).apply()
     }
 
-    // 使用者選過的主題：true 深色、false 淺色、null 表示還沒選過（跟隨系統）
-    fun darkTheme(context: Context): Boolean? {
+    fun darkTheme(context: Context): Boolean? {    // Chosen theme: true dark, false light, null not chosen yet (follow system)
         val p = prefs(context)
         return if (p.contains("darkTheme")) p.getBoolean("darkTheme", false) else null
     }
