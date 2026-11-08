@@ -20,7 +20,7 @@ from ui.dialogs import showInfo, showConfirm, showSaveChoice
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Chess Opening Note Generator")
+        self.setWindowTitle("ChessNote Generator")
         self.resize(1000, 700)
 
         self.opening = Opening()
@@ -205,7 +205,7 @@ class MainWindow(QMainWindow):
 
     def updateTitle(self):    # 有未存修改時標題前加 *
         name = os.path.basename(self.currentProjectPath) if self.currentProjectPath else t("untitledProject")
-        self.setWindowTitle(f"{'*' if self.isDirty() else ''}{name} - Chess Opening Note Generator")
+        self.setWindowTitle(f"{'*' if self.isDirty() else ''}{name} - ChessNote Generator")
 
     def saveTo(self, path, kind):    # kind 為 json（暫存檔）或 html（筆記，重新產生並覆寫）；失敗時提示並回傳 False
         try:
