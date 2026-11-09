@@ -1,17 +1,17 @@
 <!---------------- LINKS_START -------------------->
 
-[release_badge]: https://img.shields.io/github/release/294Ryan/Chess-note-Generator?color=red&label=Release&style=flat-square
-[star_badge]: https://img.shields.io/github/stars/294Ryan/Chess-note-Generator?color=yellow&style=flat-square
+[release_badge]: https://img.shields.io/github/release/294Ryan/ChessNote-Generator?color=red&label=Release&style=flat-square
+[star_badge]: https://img.shields.io/github/stars/294Ryan/ChessNote-Generator?color=yellow&style=flat-square
 [license_badge]: https://img.shields.io/badge/License-GPL--3.0-orange?color=orange&style=flat-square
 [os_badge]: https://img.shields.io/badge/Supported-Windows_10%2B_%7C_Android_8.0%2B-blue?style=flat-square
-[contributors_badge]: https://contrib.rocks/image?repo=294Ryan/Chess-note-Generator
+[contributors_badge]: https://contrib.rocks/image?repo=294Ryan/ChessNote-Generator
 
-[last_release]: https://github.com/294Ryan/Chess-note-Generator/releases/latest
-[release]: https://github.com/294Ryan/Chess-note-Generator/releases
-[star]: https://github.com/294Ryan/Chess-note-Generator/stargazers
-[license]: https://github.com/294Ryan/Chess-note-Generator/blob/main/LICENSE
-[contributors]: https://github.com/294Ryan/Chess-note-Generator/graphs/contributors
-[contributing]: https://github.com/294Ryan/Chess-note-Generator/blob/main/CONTRIBUTING.md
+[last_release]: https://github.com/294Ryan/ChessNote-Generator/releases/latest
+[release]: https://github.com/294Ryan/ChessNote-Generator/releases
+[star]: https://github.com/294Ryan/ChessNote-Generator/stargazers
+[license]: https://github.com/294Ryan/ChessNote-Generator/blob/main/LICENSE
+[contributors]: https://github.com/294Ryan/ChessNote-Generator/graphs/contributors
+[contributing]: https://github.com/294Ryan/ChessNote-Generator/blob/main/CONTRIBUTING.md
 
 <!----------------- LINKS_END --------------------->
 
@@ -48,12 +48,12 @@
 > **Python**: 3.13 or above (only required when running from source)  
 
 - **Direct Download (Recommended)**: Go to [Release][release] and download the file for your platform.
-  - **Windows**: `ChessNoteGenerator.exe`. Single file, no installer and no Python required. Launch it directly.
-  - **Android**: `ChessNoteGenerator-android-installer.apk`. Open it on the device and allow installation from your browser or file manager if Android asks.
+  - **Windows**: `ChessNoteGenerator.exe`. Single file, no installer and no Python required. Launch it directly. If Windows SmartScreen appears, click **More info**, then **Run anyway**.
+  - **Android**: `ChessNoteGenerator-android-installer.apk`. Open it on the device. If Android shows a security warning or blocks the install, allow the installation (see the [FAQ](#faq)).
 - **Run from Source (Windows)**:
   ```
-  git clone https://github.com/294Ryan/Chess-note-Generator.git
-  cd Chess-note-Generator/desktop
+  git clone https://github.com/294Ryan/ChessNote-Generator.git
+  cd ChessNote-Generator/desktop
   pip install -r requirements.txt
   python main.py
   ```
@@ -172,6 +172,24 @@ Open the **⋮** menu in the top bar:
 ---
 
 ## **FAQ**
+
+<details>
+<summary><b>Windows shows "Windows protected your PC" when I launch the exe</b></summary>
+
+<br>
+
+Click **More info**, then **Run anyway**. SmartScreen shows this screen for executables it does not recognize.
+
+</details>
+
+<details>
+<summary><b>Android blocks or warns me when I install the APK</b></summary>
+
+<br>
+
+The APK is installed outside an app store, so Android may ask you to allow installs from the app you opened it with (your browser or file manager), and a security prompt such as Play Protect may appear. Allow the installation to continue. The exact wording and menu path differ between Android versions and manufacturers.
+
+</details>
 
 <details>
 <summary><b>Which file should I keep to continue editing later?</b></summary>

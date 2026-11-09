@@ -1,9 +1,8 @@
 <!---------------- LINKS_START -------------------->
 
-[license]: https://github.com/294Ryan/Chess-note-Generator/blob/main/LICENSE
-[readme]: https://github.com/294Ryan/Chess-note-Generator/blob/main/README.md
-[issues]: https://github.com/294Ryan/Chess-note-Generator/issues
-[security]: https://github.com/294Ryan/Chess-note-Generator/security
+[license]: https://github.com/294Ryan/ChessNote-Generator/blob/main/LICENSE
+[readme]: https://github.com/294Ryan/ChessNote-Generator/blob/main/README.md
+[issues]: https://github.com/294Ryan/ChessNote-Generator/issues
 
 <!----------------- LINKS_END --------------------->
 
@@ -27,8 +26,8 @@ The following sections cover the development workflow and the technical context 
 ## **Setting Up**
 Fork the repository on GitHub, then clone your fork:
 ```
-git clone https://github.com/<your-username>/Chess-note-Generator.git
-cd Chess-note-Generator
+git clone https://github.com/294Ryan/ChessNote-Generator.git
+cd ChessNote-Generator
 ```
 
 ---
@@ -93,7 +92,7 @@ Android build targets: `minSdk` 26, `compileSdk` / `targetSdk` 34, Kotlin 1.9.24
 
 ## **Project Structure**
 ```
-Chess-note-Generator/
+ChessNote-Generator/
 ├── desktop/                         # Windows app (Python + PyQt5)
 │   ├── main.py                      # Entry point
 │   ├── requirements.txt
@@ -218,7 +217,6 @@ There is no automated test suite yet; tests for `core/models.py`, `core/project_
   - Describe what changed and why. Add screenshots for UI changes.
   - State which platforms you tested.
   - Update the [README][readme] (including the FAQ) when user-facing behavior changes.
-- **Security issues**: Do not open a public issue. Use the private vulnerability report on the [Security tab][security].
 
 ---
 
